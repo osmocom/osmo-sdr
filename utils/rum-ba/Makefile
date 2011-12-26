@@ -1,5 +1,5 @@
 # binary file name
-TARGET=sdr-samba
+TARGET=rumba
 
 # CROSS_COMPILE=
 QUIET=@
