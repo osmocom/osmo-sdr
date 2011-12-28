@@ -2,6 +2,7 @@
 #define _LOGGING_H
 
 #define DTUN	1
+#define DVCO	2
 
 /*! \brief different log levels */
 #define LOGL_DEBUG	1	/*!< \brief debugging information */
