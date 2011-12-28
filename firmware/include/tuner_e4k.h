@@ -164,6 +164,7 @@ struct e4k_pll_params {
 };
 
 struct e4k_state {
+	void *i2c_dev;
 	uint8_t i2c_addr;
 	enum e4k_band band;
 	struct e4k_pll_params vco;
@@ -178,5 +179,8 @@ int e4k_if_filter_bw_get(struct e4k_state *e4k, enum e4k_if_filter filter);
 int e4k_if_filter_bw_set(struct e4k_state *e4k, enum e4k_if_filter filter,
 		         uint32_t bandwidth);
 int e4k_rf_filter_set(struct e4k_state *e4k);
+
+int e4k_reg_write(struct e4k_state *e4k, uint8_t reg, uint8_t val);
+int e4k_reg_read(struct e4k_state *e4k, uint8_t reg);
 
 #endif /* _E4K_TUNER_H */
