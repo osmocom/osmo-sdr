@@ -5,14 +5,18 @@
 
 #include <si570.h>
 #include <logging.h>
+#include <utility/trace.h>
+
+#include <twi/twid.h>
 
 static void udelay(uint32_t usec)
 {
-	volatile uint32_t i, j;
+	uint32_t i, j;
+	volatile uint32_t k;
 
 	for (i = 0; i < usec; i++) {
 		for (j = 0; j < 0xffff; j++) {
-			j = 0;
+			k = 0;
 		}
 	}
 }
@@ -32,9 +36,9 @@ static int smbus8_read_bytes(void *i2c, uint8_t addr, uint8_t reg_nr,
 }
 
 static int smbus8_read_byte(void *i2c, uint8_t addr, uint8_t reg_nr,
-			    uint8_t val)
+			    uint8_t *val)
 {
-	return smbus8_read_bytes(i2c, addr, reg_nr, &val, 1);
+	return smbus8_read_bytes(i2c, addr, reg_nr, val, 1);
 }
 
 static int smbus8_write_bytes(void *i2c, uint8_t addr, uint8_t reg_nr,
@@ -69,15 +73,19 @@ int si570_init(struct si570_ctx *ctx, void *i2c_dev, uint8_t i2c_addr)
 	ctx->i2c = i2c_dev;
 	ctx->slave_addr = i2c_addr;
 
+	TRACE_DEBUG("si570_init()\r\n");
+
 	if (0 != si570_reset(ctx)) {
-		printf("SI570 reset failed.\n");
+		TRACE_DEBUG("SI570 reset failed.\n");
 		return -EIO;
 	}
+	TRACE_DEBUG("si570_init():2\r\n");
 
 	if (0 != si570_read_calibration(ctx)) {
-		printf("SI570 init failed.\n");
+		TRACE_DEBUG("SI570 init failed.\n");
 		return -EIO;
 	}
+	TRACE_DEBUG("si570_init():3\r\n");
 
 	ctx->init = 1;
 
@@ -86,7 +94,7 @@ int si570_init(struct si570_ctx *ctx, void *i2c_dev, uint8_t i2c_addr)
 
 void si570_print_info(struct si570_ctx *ctx)
 {
-	printf("SI570 XTAL: %u Hz  REF: %u Hz\n", ctx->xtal >> 3, ctx->info->init_freq * 1000);
+	TRACE_DEBUG("SI570 XTAL: %u Hz  REF: %u Hz\n", ctx->xtal >> 3, ctx->info->init_freq * 1000);
 }
 
 static int hs_to_div(int n1)
@@ -105,10 +113,13 @@ static int hs_to_div(int n1)
 
 int si570_reset(struct si570_ctx *ctx)
 {
+	TRACE_DEBUG("si570_reset:1\r\n");
 	smbus8_write_byte(ctx->i2c, ctx->slave_addr, 135, 80);
 	udelay(1000);
+	TRACE_DEBUG("si570_reset:2\r\n");
 	smbus8_write_byte(ctx->i2c, ctx->slave_addr, 135, 01);
 	udelay(1000);
+	TRACE_DEBUG("si570_reset:3\r\n");
 
 	return 0;
 }
@@ -121,10 +132,12 @@ int si570_read_calibration(struct si570_ctx *ctx)
 	uint64_t xd, xf;
 	int n1, hs_div;
 
+	TRACE_DEBUG("si570_read_calib:1\r\n");
 	if (0 != (res = smbus8_read_bytes(ctx->i2c, ctx->slave_addr, 7, data, 6))) {
-		printf ("SI570 calibration read error (%i)\n", res);
+		TRACE_DEBUG ("SI570 calibration read error (%i)\n", res);
 		return -EINVAL;
 	}
+	TRACE_DEBUG("si570_read_calib:2\r\n");
 
 	xd   = data[1] & 0x3F;
 
@@ -140,21 +153,30 @@ int si570_read_calibration(struct si570_ctx *ctx)
 	xd <<= 8;
 	xd  |= data[5];
 
+	TRACE_DEBUG("si570_read_calib:2b\r\n");
 	n1     = ((data[0] << 2) & 0x1F) | (data[1] >> 6);
 	hs_div = (data[0] >> 5);
 
-	n = 1; {
+	TRACE_DEBUG("si570_read_calib:2c\r\n");
+	n = 1; if (xd > 0) {
 	//for (n=0; n<2; n++) {
-		long xtal_hz;
-		long xtal_diff;
 
+		TRACE_DEBUG("si570_read_calib:2d\r\n");
 		xf  = si570_data[n].init_freq * 1000;
+		TRACE_DEBUG("si570_read_calib:2e\r\n");
 		xf *= hs_to_div(hs_div) * (n1+1);
+		TRACE_DEBUG("si570_read_calib:2f\r\n");
 		xf<<=31;
+		TRACE_DEBUG("si570_read_calib:2g\r\n");
 
 		ctx->xtal = (xf + (xd/2)) / xd;
 
+		TRACE_DEBUG("si570_read_calib:2h\r\n");
+
 		ctx->info = &si570_data[n];
+
+		TRACE_DEBUG("si570_read_calib:3\r\n");
+		return 0;
 	}
 
 	return -EINVAL;
@@ -189,7 +211,7 @@ int si570_set_freq(struct si570_ctx *ctx, uint32_t freq, int trim)
 		}
 	}
 
-	printf("SI570 no solution\n");
+	TRACE_DEBUG("SI570 no solution\n");
 
 	return -EINVAL;
 
@@ -227,6 +249,7 @@ found_solution:
 
 	ctx->lock = 1;
 }
+	return 0;
 }
 
 int si570_get_lock(struct si570_ctx *ctx)
@@ -240,7 +263,7 @@ void si570_regdump(struct si570_ctx *ctx)
 	uint8_t data[8];
 
 	if (!ctx->init) {
-		printf("SI570 not initialized\n");
+		TRACE_DEBUG("SI570 not initialized\n");
 		return;
 	}
 
@@ -248,7 +271,7 @@ void si570_regdump(struct si570_ctx *ctx)
 	smbus8_read_byte(ctx->i2c, ctx->slave_addr, 135, &data[6]);
 	smbus8_read_byte(ctx->i2c, ctx->slave_addr, 137, &data[7]);
 
-	printf("SI570 regs: %02X %02X %02X %02X %02X %02X %02X %02X\n",
+	TRACE_DEBUG("SI570 regs: %02X %02X %02X %02X %02X %02X %02X %02X\n",
 		data[0], data[1], data[2], data[3],
 		data[4], data[5], data[6], data[7]);
 }
