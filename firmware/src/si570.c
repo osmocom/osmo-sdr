@@ -15,7 +15,7 @@ static void udelay(uint32_t usec)
 	volatile uint32_t k;
 
 	for (i = 0; i < usec; i++) {
-		for (j = 0; j < 0xffff; j++) {
+		for (j = 0; j < 0xff; j++) {
 			k = 0;
 		}
 	}
