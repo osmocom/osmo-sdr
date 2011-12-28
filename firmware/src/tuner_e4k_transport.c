@@ -40,9 +40,9 @@ int e4k_reg_read(struct e4k_state *e4k, uint8_t reg)
 
 
 /* We assume the caller has already done TWID_initialize() */
-int sam3u_e4k_init(struct e4k_state *e4k, uint8_t slave_addr)
+int sam3u_e4k_init(struct e4k_state *e4k, void *i2c, uint8_t slave_addr)
 {
-	e4k->i2c_dev = AT91C_BASE_TWI0;
+	e4k->i2c_dev = i2c;
 	e4k->i2c_addr = slave_addr;
 
 	return 0;

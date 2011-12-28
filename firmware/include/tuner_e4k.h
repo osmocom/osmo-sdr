@@ -183,4 +183,6 @@ int e4k_rf_filter_set(struct e4k_state *e4k);
 int e4k_reg_write(struct e4k_state *e4k, uint8_t reg, uint8_t val);
 int e4k_reg_read(struct e4k_state *e4k, uint8_t reg);
 
+int sam3u_e4k_init(struct e4k_state *e4k, void *i2c, uint8_t slave_addr);
+
 #endif /* _E4K_TUNER_H */
