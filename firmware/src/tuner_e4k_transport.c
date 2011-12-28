@@ -29,9 +29,9 @@ int e4k_reg_read(struct e4k_state *e4k, uint8_t reg)
 	unsigned char rc;
 	uint8_t val;
 
-	rc = TWID_Write(e4k->i2c_dev, e4k->i2c_addr, reg, 1, &val, 1, NULL);
+	rc = TWID_Read(e4k->i2c_dev, e4k->i2c_addr, reg, 1, &val, 1, NULL);
 	if (rc != 0) {
-		LOGP(DTUN, LOGL_ERROR, "Error %u in TWID_Write\n", rc);
+		LOGP(DTUN, LOGL_ERROR, "Error %u in TWID_Read\n", rc);
 		return -EIO;
 	}
 
