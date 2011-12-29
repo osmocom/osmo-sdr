@@ -53,7 +53,11 @@ int sam3u_e4k_init(struct e4k_state *e4k, void *i2c, uint8_t slave_addr)
 static const Pin pin_rfstby = PIN_RFSTBY;
 static const Pin pin_pwdn = PIN_PDWN;
 
-int sam3u_e4k_power(struct e4k_state *e4k, int on)
+/*! \brief Enable or disable Power of E4K
+ *  \param[in] e4k E4K reference
+ *  \param[in] on Enable (1) or disable (0) Power
+ */
+void sam3u_e4k_power(struct e4k_state *e4k, int on)
 {
 	if (on)
 		PIO_Set(&pin_pwdn);
@@ -61,10 +65,14 @@ int sam3u_e4k_power(struct e4k_state *e4k, int on)
 		PIO_Clear(&pin_pwdn);
 }
 
-int sam3u_e4k_stby(struct e4k_state *e4k, int on)
+/*! \brief Enable or disable standby mode of E4K
+ *  \param[in] e4k E4K reference
+ *  \param[in] on Enable (1) or disable (0) STBY
+ */
+void sam3u_e4k_stby(struct e4k_state *e4k, int on)
 {
 	if (on)
-		PIO_Set(&pin_rfstby);
-	else
 		PIO_Clear(&pin_rfstby);
+	else
+		PIO_Set(&pin_rfstby);
 }
