@@ -9,6 +9,8 @@
 
 //#include <twi/twi.h>
 #include <twi/twid.h>
+#include <pio/pio.h>
+#include <board.h>
 
 
 int e4k_reg_write(struct e4k_state *e4k, uint8_t reg, uint8_t val)
@@ -46,4 +48,23 @@ int sam3u_e4k_init(struct e4k_state *e4k, void *i2c, uint8_t slave_addr)
 	e4k->i2c_addr = slave_addr;
 
 	return 0;
+}
+
+static const Pin pin_rfstby = PIN_RFSTBY;
+static const Pin pin_pwdn = PIN_PDWN;
+
+int sam3u_e4k_power(struct e4k_state *e4k, int on)
+{
+	if (on)
+		PIO_Set(&pin_pwdn);
+	else
+		PIO_Clear(&pin_pwdn);
+}
+
+int sam3u_e4k_stby(struct e4k_state *e4k, int on)
+{
+	if (on)
+		PIO_Set(&pin_rfstby);
+	else
+		PIO_Clear(&pin_rfstby);
 }
