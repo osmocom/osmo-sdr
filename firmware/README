@@ -1,0 +1,7 @@
+
+In order to build the firmware, you need to clone at91lib from this
+repository: git://git.gnumonks.org/at91lib.git
+
+You need to put the at91lib and osmo-sdr into the same parent directory
+or adjust the paths in sdr-test-project/Makefile to match your layout.
+
