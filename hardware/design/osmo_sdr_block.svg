@@ -14,7 +14,10 @@
    id="svg2"
    version="1.1"
    inkscape:version="0.48.1 r9760"
-   sodipodi:docname="New document 1">
+   sodipodi:docname="osmo_sdr_block.png"
+   inkscape:export-filename="/sunbeam/home/laforge/osmo_sdr_block.png"
+   inkscape:export-xdpi="156.82008"
+   inkscape:export-ydpi="156.82008">
   <defs
      id="defs4">
     <marker
@@ -142,8 +145,8 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="1.7166667"
-     inkscape:cx="346.62344"
-     inkscape:cy="604.03606"
+     inkscape:cx="349.61606"
+     inkscape:cy="534.13315"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="true"
@@ -178,6 +181,13 @@
      inkscape:groupmode="layer"
      id="layer1"
      transform="translate(0,-308.2677)">
+    <rect
+       style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1.06299213;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       id="rect9629"
+       width="620.07874"
+       height="283.4646"
+       x="35.433071"
+       y="343.70078" />
     <rect
        style="fill:none;stroke:#000000;stroke-width:1.0629921;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
        id="rect3757"
@@ -592,13 +602,13 @@
     <text
        xml:space="preserve"
        style="font-size:12px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:helvetica"
-       x="424.4263"
+       x="500.96201"
        y="622.38129"
        id="text9566"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan9568"
-         x="424.4263"
-         y="622.38129">OsmoSDR block schematic</tspan></text>
+         x="500.96201"
+         y="622.38129">OsmoSDR block diagram</tspan></text>
   </g>
 </svg>
