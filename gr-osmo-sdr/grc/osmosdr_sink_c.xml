@@ -1,18 +1,13 @@
 <?xml version="1.0"?>
 <block>
-  <name>Sink</name>
+  <name>OsmoSDR Sink</name>
   <key>osmosdr_sink_c</key>
-  <category>OSMOSDR</category>
+  <category>OsmoSDR</category>
   <import>import osmosdr</import>
   <make>osmosdr.sink_c()</make>
 
   <sink>
     <name>in</name>
-    <type>float</type>
+    <type>complex</type>
   </sink>
-
-  <source>
-    <name>out</name>
-    <type>float</type>
-  </source>
 </block>

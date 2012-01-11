@@ -24,5 +24,6 @@ install(FILES
     osmosdr_api.h
     osmosdr_source_c.h
     osmosdr_sink_c.h
+    osmosdr_control.h
     DESTINATION include/osmosdr
 )

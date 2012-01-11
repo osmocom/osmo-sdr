@@ -23,7 +23,7 @@
 #define INCLUDED_OSMOSDR_SOURCE_C_H
 
 #include <osmosdr_api.h>
-#include <gr_block.h>
+#include <gr_hier_block2.h>
 
 class osmosdr_source_c;
 
@@ -47,36 +47,30 @@ typedef boost::shared_ptr<osmosdr_source_c> osmosdr_source_c_sptr;
  * constructor is private.  osmosdr_make_source_c is the public
  * interface for creating new instances.
  */
-OSMOSDR_API osmosdr_source_c_sptr osmosdr_make_source_c ();
+OSMOSDR_API osmosdr_source_c_sptr osmosdr_make_source_c (const std::string & device = "");
 
 /*!
  * \brief Provides a stream of complex samples.
  * \ingroup block
  *
- * \sa osmosdr_sink_c for a version that subclasses gr_sync_block.
+ * \sa osmosdr_sink_c for a version that subclasses gr_hier_block2.
  */
-class OSMOSDR_API osmosdr_source_c : public gr_block
+class OSMOSDR_API osmosdr_source_c : public gr_hier_block2
 {
 private:
   // The friend declaration allows osmosdr_make_source_c to
   // access the private constructor.
 
-  friend OSMOSDR_API osmosdr_source_c_sptr osmosdr_make_source_c ();
+  friend OSMOSDR_API osmosdr_source_c_sptr osmosdr_make_source_c (const std::string & device);
 
   /*!
    * \brief Provides a stream of complex samples.
    */
-  osmosdr_source_c ();  	// private constructor
+  osmosdr_source_c (const std::string & device);  	// private constructor
 
  public:
   ~osmosdr_source_c ();	// public destructor
 
-  // Where all the action really happens
-
-  int general_work (int noutput_items,
-                    gr_vector_int &ninput_items,
-                    gr_vector_const_void_star &input_items,
-                    gr_vector_void_star &output_items);
 };
 
 #endif /* INCLUDED_OSMOSDR_SOURCE_C_H */
