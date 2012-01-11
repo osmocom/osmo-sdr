@@ -21,8 +21,8 @@
 # Install public header files
 ########################################################################
 install(FILES
-    howto_api.h
-    howto_square_ff.h
-    howto_square2_ff.h
-    DESTINATION include/howto
+    osmosdr_api.h
+    osmosdr_source_c.h
+    osmosdr_sink_c.h
+    DESTINATION include/osmosdr
 )

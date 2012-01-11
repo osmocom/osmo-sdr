@@ -5,7 +5,7 @@
 # Generated: Thu Nov 12 11:26:07 2009
 ##################################################
 
-import howto
+import osmosdr
 from gnuradio import eng_notation
 from gnuradio import gr
 from gnuradio.eng_option import eng_option
@@ -15,7 +15,7 @@ from grc_gnuradio import wxgui as grc_wxgui
 from optparse import OptionParser
 import wx
 
-class howto_square(grc_wxgui.top_block_gui):
+class osmosdr_source_c(grc_wxgui.top_block_gui):
 
 	def __init__(self):
 		grc_wxgui.top_block_gui.__init__(self, title="Howto Square")
@@ -52,7 +52,7 @@ class howto_square(grc_wxgui.top_block_gui):
 			num_inputs=1,
 		)
 		self.Add(self.sink2.win)
-		self.sqr = howto.square_ff()
+		self.sqr = osmosdr.source_c()
 		self.src = gr.vector_source_f(([float(n)-50 for n in range(100)]), True, 1)
 		self.thr = gr.throttle(gr.sizeof_float*1, samp_rate)
 
@@ -72,6 +72,6 @@ class howto_square(grc_wxgui.top_block_gui):
 if __name__ == '__main__':
 	parser = OptionParser(option_class=eng_option, usage="%prog: [options]")
 	(options, args) = parser.parse_args()
-	tb = howto_square()
+	tb = osmosdr_source_c()
 	tb.Run(True)
 

@@ -18,7 +18,7 @@
 # Boston, MA 02110-1301, USA.
 
 install(FILES
-    howto_square_ff.xml
-    howto_square2_ff.xml
+    osmosdr_source_c.xml
+    osmosdr_sink_c.xml
     DESTINATION share/gnuradio/grc/blocks
 )

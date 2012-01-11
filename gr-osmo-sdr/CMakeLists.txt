@@ -1,17 +1,17 @@
 # Copyright 2011 Free Software Foundation, Inc.
-# 
+#
 # This file is part of GNU Radio
-# 
+#
 # GNU Radio is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3, or (at your option)
 # any later version.
-# 
+#
 # GNU Radio is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with GNU Radio; see the file COPYING.  If not, write to
 # the Free Software Foundation, Inc., 51 Franklin Street,
@@ -22,7 +22,7 @@
 # Project setup
 ########################################################################
 cmake_minimum_required(VERSION 2.6)
-project(gr-howto-write-a-block CXX)
+project(gr-osmosdr CXX)
 enable_testing()
 
 #select the release build type by default to get optimization flags
@@ -60,7 +60,7 @@ set(Boost_ADDITIONAL_VERSIONS
 find_package(Boost "1.35")
 
 if(NOT Boost_FOUND)
-    message(FATAL_ERROR "Boost required to compile howto")
+    message(FATAL_ERROR "Boost required to compile osmosdr")
 endif()
 
 ########################################################################
@@ -85,13 +85,18 @@ set(GRC_BLOCKS_DIR      ${GR_PKG_DATA_DIR}/grc/blocks)
 ########################################################################
 find_package(Gruel)
 find_package(GnuradioCore)
+find_package(GnuradioAudio)
 
 if(NOT GRUEL_FOUND)
-    message(FATAL_ERROR "Gruel required to compile howto")
+    message(FATAL_ERROR "Gruel required to compile osmosdr")
 endif()
 
 if(NOT GNURADIO_CORE_FOUND)
-    message(FATAL_ERROR "GnuRadio Core required to compile howto")
+    message(FATAL_ERROR "GnuRadio Core required to compile osmosdr")
+endif()
+
+if(NOT GNURADIO_AUDIO_FOUND)
+    message(FATAL_ERROR "GnuRadio Audio required to compile osmosdr")
 endif()
 
 ########################################################################
@@ -111,8 +116,8 @@ link_directories(
 )
 
 # Set component parameters
-set(GR_HOWTO_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include CACHE INTERNAL "" FORCE)
-set(GR_HOWTO_SWIG_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/swig CACHE INTERNAL "" FORCE)
+set(GR_OSMOSDR_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include CACHE INTERNAL "" FORCE)
+set(GR_OSMOSDR_SWIG_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/swig CACHE INTERNAL "" FORCE)
 
 ########################################################################
 # Add subdirectories

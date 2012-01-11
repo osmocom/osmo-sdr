@@ -21,12 +21,12 @@
 
 #include <boost/test/unit_test.hpp>
 
-BOOST_AUTO_TEST_CASE(qa_howto_square2_ff_t1){
+BOOST_AUTO_TEST_CASE(qa_osmosdr_sink_c_t1){
     BOOST_CHECK_EQUAL(2 + 2, 4);
     // TODO BOOST_* test macros here
 }
 
-BOOST_AUTO_TEST_CASE(qa_howto_square2_ff_t2){
+BOOST_AUTO_TEST_CASE(qa_osmosdr_sink_c_t2){
     BOOST_CHECK_EQUAL(2 + 2, 4);
     // TODO BOOST_* test macros here
 }

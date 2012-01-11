@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <block>
-  <name>Square2</name>
-  <key>howto_square2_ff</key>
-  <category>HOWTO</category>
-  <import>import howto</import>
-  <make>howto.square2_ff()</make>
+  <name>Sink</name>
+  <key>osmosdr_sink_c</key>
+  <category>OSMOSDR</category>
+  <import>import osmosdr</import>
+  <make>osmosdr.sink_c()</make>
 
   <sink>
     <name>in</name>

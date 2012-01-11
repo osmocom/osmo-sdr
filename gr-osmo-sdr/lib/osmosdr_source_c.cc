@@ -29,17 +29,17 @@
 #include "config.h"
 #endif
 
-#include <howto_square2_ff.h>
+#include <osmosdr_source_c.h>
 #include <gr_io_signature.h>
 
 /*
- * Create a new instance of howto_square2_ff and return
+ * Create a new instance of osmosdr_source_c and return
  * a boost shared_ptr.  This is effectively the public constructor.
  */
-howto_square2_ff_sptr 
-howto_make_square2_ff ()
+osmosdr_source_c_sptr 
+osmosdr_make_source_c ()
 {
-  return gnuradio::get_initial_sptr(new howto_square2_ff ());
+  return gnuradio::get_initial_sptr(new osmosdr_source_c ());
 }
 
 /*
@@ -59,10 +59,10 @@ static const int MAX_OUT = 1;	// maximum number of output streams
 /*
  * The private constructor
  */
-howto_square2_ff::howto_square2_ff ()
-  : gr_sync_block ("square2_ff",
-		   gr_make_io_signature (MIN_IN, MAX_IN, sizeof (float)),
-		   gr_make_io_signature (MIN_OUT, MAX_OUT, sizeof (float)))
+osmosdr_source_c::osmosdr_source_c ()
+  : gr_block ("source_c",
+	      gr_make_io_signature (MIN_IN, MAX_IN, sizeof (float)),
+	      gr_make_io_signature (MIN_OUT, MAX_OUT, sizeof (float)))
 {
   // nothing else required in this example
 }
@@ -70,15 +70,16 @@ howto_square2_ff::howto_square2_ff ()
 /*
  * Our virtual destructor.
  */
-howto_square2_ff::~howto_square2_ff ()
+osmosdr_source_c::~osmosdr_source_c ()
 {
   // nothing else required in this example
 }
 
 int 
-howto_square2_ff::work (int noutput_items,
-			gr_vector_const_void_star &input_items,
-			gr_vector_void_star &output_items)
+osmosdr_source_c::general_work (int noutput_items,
+			       gr_vector_int &ninput_items,
+			       gr_vector_const_void_star &input_items,
+			       gr_vector_void_star &output_items)
 {
   const float *in = (const float *) input_items[0];
   float *out = (float *) output_items[0];
@@ -86,6 +87,11 @@ howto_square2_ff::work (int noutput_items,
   for (int i = 0; i < noutput_items; i++){
     out[i] = in[i] * in[i];
   }
+
+  // Tell runtime system how many input items we consumed on
+  // each input stream.
+
+  consume_each (noutput_items);
 
   // Tell runtime system how many output items we produced.
   return noutput_items;

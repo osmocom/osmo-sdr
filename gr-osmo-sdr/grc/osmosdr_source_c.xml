@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <block>
-  <name>Square</name>
-  <key>howto_square_ff</key>
-  <category>HOWTO</category>
-  <import>import howto</import>
-  <make>howto.square_ff()</make>
+  <name>Source</name>
+  <key>osmosdr_source_c</key>
+  <category>OSMOSDR</category>
+  <import>import osmosdr</import>
+  <make>osmosdr.source_c()</make>
 
   <sink>
     <name>in</name>

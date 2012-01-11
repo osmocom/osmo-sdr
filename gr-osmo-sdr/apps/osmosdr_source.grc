@@ -5,7 +5,7 @@
     <key>options</key>
     <param>
       <key>id</key>
-      <value>howto_square</value>
+      <value>osmosdr_source_c</value>
     </param>
     <param>
       <key>_enabled</key>
@@ -147,7 +147,7 @@
     </param>
   </block>
   <block>
-    <key>howto_square_ff</key>
+    <key>osmosdr_source_c</key>
     <param>
       <key>id</key>
       <value>sqr</value>

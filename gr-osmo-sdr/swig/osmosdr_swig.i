@@ -1,27 +1,27 @@
 /* -*- c++ -*- */
 
-#define HOWTO_API
+#define OSMOSDR_API
 
 %include "gnuradio.i"			// the common stuff
 
 //load generated python docstrings
-%include "howto_swig_doc.i"
+%include "osmosdr_swig_doc.i"
 
 
 %{
-#include "howto_square_ff.h"
-#include "howto_square2_ff.h"
+#include "osmosdr_source_c.h"
+#include "osmosdr_sink_c.h"
 %}
 
-GR_SWIG_BLOCK_MAGIC(howto,square_ff);
-%include "howto_square_ff.h"
+GR_SWIG_BLOCK_MAGIC(osmosdr,source_c);
+%include "osmosdr_source_c.h"
 
-GR_SWIG_BLOCK_MAGIC(howto,square2_ff);
-%include "howto_square2_ff.h"
+GR_SWIG_BLOCK_MAGIC(osmosdr,sink_c);
+%include "osmosdr_sink_c.h"
 
 #if SWIGGUILE
 %scheme %{
-(load-extension-global "libguile-gnuradio-howto_swig" "scm_init_gnuradio_howto_swig_module")
+(load-extension-global "libguile-gnuradio-osmosdr_swig" "scm_init_gnuradio_osmosdr_swig_module")
 %}
 
 %goops %{
