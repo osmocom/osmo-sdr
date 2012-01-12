@@ -15,21 +15,21 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#ifndef INCLUDED_UHD_TYPES_RANGES_HPP
-#define INCLUDED_UHD_TYPES_RANGES_HPP
+#ifndef INCLUDED_OSMOSDR_RANGES_H
+#define INCLUDED_OSMOSDR_RANGES_H
 
-#include <uhd/config.hpp>
-#include <uhd/utils/pimpl.hpp>
+#include <osmosdr_api.h>
+#include <osmosdr_pimpl.h>
 #include <string>
 #include <vector>
 
-namespace uhd{
+namespace osmosdr{
 
     /*!
      * A range object describes a set of discrete values of the form:
      * y = start + step*n, where n is an integer between 0 and (stop - start)/step
      */
-    class UHD_API range_t{
+    class OSMOSDR_API range_t{
     public:
 
         /*!
@@ -60,13 +60,13 @@ namespace uhd{
         //! Convert this range to a printable string
         const std::string to_pp_string(void) const;
 
-    private: UHD_PIMPL_DECL(impl) _impl;
+    private: OSMOSDR_PIMPL_DECL(impl) _impl;
     };
 
     /*!
      * A meta-range object holds a list of individual ranges.
      */
-    struct UHD_API meta_range_t : std::vector<range_t>{
+    struct OSMOSDR_API meta_range_t : std::vector<range_t>{
 
         //! A default constructor for an empty meta-range
         meta_range_t(void);
@@ -115,6 +115,6 @@ namespace uhd{
     typedef meta_range_t gain_range_t;
     typedef meta_range_t freq_range_t;
 
-} //namespace uhd
+} //namespace osmosdr
 
-#endif /* INCLUDED_UHD_TYPES_RANGES_HPP */
+#endif /* INCLUDED_OSMOSDR_RANGES_H */

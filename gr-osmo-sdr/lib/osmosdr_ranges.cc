@@ -15,14 +15,14 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include <uhd/types/ranges.hpp>
-#include <uhd/exception.hpp>
+#include <osmosdr_ranges.h>
+#include <stdexcept>
 #include <boost/math/special_functions/round.hpp>
 #include <boost/foreach.hpp>
 #include <algorithm>
 #include <sstream>
 
-using namespace uhd;
+using namespace osmosdr;
 
 /***********************************************************************
  * range_t implementation code
@@ -37,7 +37,7 @@ struct range_t::impl{
 };
 
 range_t::range_t(double value):
-    _impl(UHD_PIMPL_MAKE(impl, (value, value, 0)))
+    _impl(OSMOSDR_PIMPL_MAKE(impl, (value, value, 0)))
 {
     /* NOP */
 }
@@ -45,10 +45,10 @@ range_t::range_t(double value):
 range_t::range_t(
     double start, double stop, double step
 ):
-    _impl(UHD_PIMPL_MAKE(impl, (start, stop, step)))
+    _impl(OSMOSDR_PIMPL_MAKE(impl, (start, stop, step)))
 {
     if (stop < start){
-        throw uhd::value_error("cannot make range where stop < start");
+        throw std::runtime_error("cannot make range where stop < start");
     }
 }
 
@@ -78,11 +78,11 @@ const std::string range_t::to_pp_string(void) const{
  **********************************************************************/
 void check_meta_range_monotonic(const meta_range_t &mr){
     if (mr.empty()){
-        throw uhd::value_error("meta-range cannot be empty");
+        throw std::runtime_error("meta-range cannot be empty");
     }
     for (size_t i = 1; i < mr.size(); i++){
         if (mr.at(i).start() < mr.at(i-1).stop()){
-            throw uhd::value_error("meta-range is not monotonic");
+            throw std::runtime_error("meta-range is not monotonic");
         }
     }
 }

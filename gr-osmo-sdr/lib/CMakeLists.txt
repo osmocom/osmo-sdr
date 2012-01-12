@@ -22,7 +22,7 @@
 ########################################################################
 include(GrPlatform) #define LIB_SUFFIX
 
-add_library(gnuradio-osmosdr SHARED osmosdr_source_c.cc osmosdr_sink_c.cc osmosdr_control.cc)
+add_library(gnuradio-osmosdr SHARED osmosdr_control.cc osmosdr_ranges.cc osmosdr_sink_c.cc osmosdr_source_c.cc)
 target_link_libraries(gnuradio-osmosdr ${Boost_LIBRARIES} ${GRUEL_LIBRARIES} ${GNURADIO_CORE_LIBRARIES} ${GNURADIO_AUDIO_LIBRARIES})
 set_target_properties(gnuradio-osmosdr PROPERTIES DEFINE_SYMBOL "gnuradio_osmosdr_EXPORTS")
 
