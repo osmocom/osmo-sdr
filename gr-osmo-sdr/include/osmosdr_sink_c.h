@@ -23,6 +23,7 @@
 #define INCLUDED_OSMOSDR_SINK_C_H
 
 #include <osmosdr_api.h>
+#include <osmosdr_control.h>
 #include <gr_hier_block2.h>
 
 class osmosdr_sink_c;
@@ -47,7 +48,7 @@ typedef boost::shared_ptr<osmosdr_sink_c> osmosdr_sink_c_sptr;
  * constructor is private.  osmosdr_make_sink_c is the public
  * interface for creating new instances.
  */
-OSMOSDR_API osmosdr_sink_c_sptr osmosdr_make_sink_c (const std::string & device = "");
+OSMOSDR_API osmosdr_sink_c_sptr osmosdr_make_sink_c (const std::string & device_name = "");
 
 /*!
  * \brief Takes a stream of complex samples.
@@ -55,18 +56,19 @@ OSMOSDR_API osmosdr_sink_c_sptr osmosdr_make_sink_c (const std::string & device 
  *
  * This uses the preferred technique: subclassing gr_hier_block2.
  */
-class OSMOSDR_API osmosdr_sink_c : public gr_hier_block2
+class OSMOSDR_API osmosdr_sink_c : public gr_hier_block2,
+                                   public osmosdr_tx_control
 {
 private:
   // The friend declaration allows osmosdr_make_sink_c to
   // access the private constructor.
 
-  friend OSMOSDR_API osmosdr_sink_c_sptr osmosdr_make_sink_c (const std::string & device);
+  friend OSMOSDR_API osmosdr_sink_c_sptr osmosdr_make_sink_c (const std::string & device_name);
 
   /*!
    * \brief Takes a stream of complex samples.
    */
-  osmosdr_sink_c (const std::string & device);  	// private constructor
+  osmosdr_sink_c (const std::string & device_name);  	// private constructor
 
  public:
   ~osmosdr_sink_c ();	// public destructor

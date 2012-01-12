@@ -39,9 +39,9 @@
  * a boost shared_ptr.  This is effectively the public constructor.
  */
 osmosdr_source_c_sptr
-osmosdr_make_source_c (const std::string &device)
+osmosdr_make_source_c (const std::string &device_name)
 {
-  return gnuradio::get_initial_sptr(new osmosdr_source_c (device));
+  return gnuradio::get_initial_sptr(new osmosdr_source_c (device_name));
 }
 
 /*
@@ -61,26 +61,20 @@ static const int MAX_OUT = 1;	// maximum number of output streams
 /*
  * The private constructor
  */
-osmosdr_source_c::osmosdr_source_c (const std::string &device)
-  : gr_hier_block2 ("source_c",
+osmosdr_source_c::osmosdr_source_c (const std::string &device_name)
+  : gr_hier_block2 ("osmosdr_source_c",
         gr_make_io_signature (MIN_IN, MAX_IN, sizeof (gr_complex)),
-        gr_make_io_signature (MIN_OUT, MAX_OUT, sizeof (gr_complex)))
+        gr_make_io_signature (MIN_OUT, MAX_OUT, sizeof (gr_complex))),
+    osmosdr_rx_control(device_name)
 {
-    std::string dev_name = "hw:0";
-/*
-    if (device.empty())
-        pick first available device or throw an exception();
-*/
-    gr_float_to_complex_sptr f2c;
-
     /* Audio source; sample rate is 96kHz by default */
-    audio_source::sptr src = audio_make_source(96000, device, true);
+    audio_source::sptr src = audio_make_source(96000, audio_dev_name(), true);
 
     /* block to convert stereo audio to a complex stream */
-    f2c = gr_make_float_to_complex(1);
+    gr_float_to_complex_sptr f2c = gr_make_float_to_complex(1);
 
-    connect(src, 0, f2c, 0);
-    connect(src, 1, f2c, 1);
+    connect(src, 0, f2c, 0); /* Left is I */
+    connect(src, 1, f2c, 1); /* Right is Q */
     connect(f2c, 0, self(), 0);
 }
 

@@ -2,142 +2,185 @@
 #define OSMOSDR_CONTROL_H
 
 #include <string>
+#include <complex>
+#include <osmosdr_ranges.h>
 
-/*! session object to cdc-acm based control channel of the device */
+/*!
+ * session object to cdc-acm based control channel of the device
+ */
 class osmosdr_control
 {
 public:
-    osmosdr_control(const std::string &device);
+    osmosdr_control(const std::string &device_name);
     virtual ~osmosdr_control();
 
-    /* TODO: provide facilities for device discovery (lookup, alsa to ttyS... ) */
+    static std::vector< std::string > find_devices();
+
+protected:
+    std::string audio_dev_name();
+    std::string control_dev_name();
 };
 
-/*! osmosdr_source class derives this class to be able to control the device */
+/*!
+ * osmosdr_source class derives from this class to be able to control the device
+ */
 class osmosdr_rx_control : public osmosdr_control
 {
 public:
-    osmosdr_rx_control(const std::string &device);
+    osmosdr_rx_control(const std::string &device_name);
     virtual ~osmosdr_rx_control();
-
-    /*! \brief Set frequency with Hz resolution.
-     *  \param freq The frequency in Hz
-     *
-     * This function takes a double parameter in order to allow using engineering
-     * notation in GRC.
-     *
-     * \see set_center_freq()
+#if 0
+    /*!
+     * Set the sample rate for the OsmoSDR device.
+     * This also will select the appropriate IF bandpass.
+     * \param rate a new rate in Sps
      */
-    int set_center_freq(double freq);
+    virtual void set_samp_rate(double rate) = 0;
 
-    double get_center_freq();
-
-    /*! \brief Set LNA gain.
-     *  \param gain The new gain in dB.
-     *
-     * Set the LNA gain in the OsmoSDR. Valid range is -5 to 30. Although
-     * the LNA gain in the OsmoSDR takes enumerated values corresponding to
-     * 2.5 dB steps, you can can call this method with any double value
-     * and it will be rounded to the nearest valid value.
-     *
-     * By default the LNA gain is set to 20 dB and this is a good value for
-     * most cases. In noisy areas you may try to reduce the gain.
+    /*!
+     * Get the sample rate for the OsmoSDR device.
+     * This is the actual sample rate and may differ from the rate set.
+     * \return the actual rate in Sps
      */
-    int set_lna_gain(double gain);
+    virtual double get_samp_rate(void) = 0;
 
-    /*! \brief Set mixer gain.
-     *  \param gain The new gain in dB.
-     *
-     * Set the mixer gain in the OsmoSDR. Valid values are +4 and +12 dB.
-     *
-     * By default the mixer gain is set to +12 dB and this is a good value for
-     * most cases. In noisy areas you may try to reduce the gain.
+    /*!
+     * Get the possible sample rates for the OsmoSDR device.
+     * \return a range of rates in Sps
      */
-    int set_mixer_gain(double gain);
+    virtual osmosdr::meta_range_t get_samp_rates(void) = 0;
 
-    /*! magically automates gain selection by using all available gain stages */
-    int set_gain(double gain);
-
-    /*! \brief Set IF stage gain.
-     *  \param gain The new gain in dB.
-     *
-     * Set the IF stage gain in the OsmoSDR. Valid range is TBD to TBD.
-     *
-     * By default the IF gain is set to TBD dB and this is a good value for most
-     * cases. In noisy areas you may try to reduce the gain.
+    /*!
+     * Tune the OsmoSDR device to the desired center frequency.
+     * This also will select the appropriate RF bandpass.
+     * \param freq the desired frequency in Hz
+     * \return a tune result with the actual frequencies
      */
-    int set_if_gain(double gain);
+    virtual bool set_center_freq(double freq) = 0;
 
-    /*! \brief Set new frequency correction.
-     *  \param ppm The new frequency correction in parts per million
-     *
-     *  TODO: document recommended carrection values (if any)
+    /*!
+     * Get the center frequency.
+     * \return the frequency in Hz
      */
-    int set_freq_correction(int ppm);
+    virtual double get_center_freq() = 0;
 
-    /*! \brief Set DC offset correction.
-     *  \param in_phase DC correction for I component (-1.0 to 1.0)
-     *  \param quadrature DC correction for Q component (-1.0 to 1.0)
-     *
-     * Set DC offset correction in the device. Default is 0.0.
+    /*!
+     * Get the tunable frequency range.
+     * \return the frequency range in Hz
      */
-    int set_dc_correction(double in_phase, double quadrature);
+    virtual osmosdr::freq_range_t get_freq_range() = 0;
 
-    /*! \brief Set IQ phase and gain balance.
-     *  \param gain The gain correction (-1.0 to 1.0)
-     *  \param phase The phase correction (-1.0 to 1.0)
-     *
-     * Set IQ phase and gain balance in the device. The default values
-     * are 0.0 for phase and 1.0 for gain.
+    /*!
+     * Set the gain for the OsmoSDR.
+     * \param gain the gain in dB
      */
-    int set_iq_correction(double gain, double phase);
+    virtual void set_gain(double gain) = 0;
 
+    /*!
+     * Set the named gain on the OsmoSDR.
+     * \param gain the gain in dB
+     * \param name the name of the gain stage
+     */
+    virtual void set_gain(double gain, std::string &name) = 0;
+
+    /*!
+     * Get the actual OsmoSDR gain setting.
+     * \return the actual gain in dB
+     */
+    virtual double get_gain() = 0;
+
+    /*!
+     * Get the actual OsmoSDR gain setting of named stage.
+     * \param name the name of the gain stage
+     * \return the actual gain in dB
+     */
+    virtual double get_gain(const std::string &name) = 0;
+
+    /*!
+     * Get the actual OsmoSDR gain setting of named stage.
+     * \return the actual gain in dB
+     */
+    virtual std::vector<std::string> get_gain_names() = 0;
+
+    /*!
+     * Get the settable gain range.
+     * \return the gain range in dB
+     */
+    virtual osmosdr::gain_range_t get_gain_range() = 0;
+
+    /*!
+     * Get the settable gain range.
+     * \param name the name of the gain stage
+     * \return the gain range in dB
+     */
+    virtual osmosdr::gain_range_t get_gain_range(const std::string &name) = 0;
+
+    /*!
+     * Enable/disable the automatic DC offset correction.
+     * The automatic correction subtracts out the long-run average.
+     *
+     * When disabled, the averaging option operation is halted.
+     * Once halted, the average value will be held constant
+     * until the user re-enables the automatic correction
+     * or overrides the value by manually setting the offset.
+     *
+     * \param enb true to enable automatic DC offset correction
+     */
+    virtual void set_dc_offset(const bool enb) = 0;
+
+    /*!
+     * Set a constant DC offset value.
+     * The value is complex to control both I and Q.
+     * Only set this when automatic correction is disabled.
+     * \param offset the dc offset (1.0 is full-scale)
+     */
+    virtual void set_dc_offset(const std::complex<double> &offset) = 0;
+
+    /*!
+     * Set the RX frontend IQ imbalance correction.
+     * Use this to adjust the magnitude and phase of I and Q.
+     *
+     * \param correction the complex correction value
+     */
+    virtual void set_iq_balance(const std::complex<double> &correction) = 0;
+
+    /*!
+     * Get the master clock rate.
+     * \return the clock rate in Hz
+     */
+    virtual double get_clock_rate() = 0;
+
+    /*!
+     * Set the master clock rate.
+     * \param rate the new rate in Hz
+     */
+    virtual void set_clock_rate(double rate) = 0;
+
+    /*!
+     * Get automatic gain control status
+     * \return the clock rate in Hz
+     */
+    virtual bool get_agc() = 0;
+
+    /*!
+     * Enable/disable the automatic gain control.
+     * \param enb true to enable automatic gain control
+     * \param attack attack time of the AGC circuit
+     * \param decay decay time of the AGC circuit
+     */
+    virtual void set_agc(bool enb, double attack, double decay) = 0;
+#endif
     /*! TODO: add more */
-
 };
 
-/*! osmosdr_sink class derives this class to be able to control the device */
+/*!
+ * osmosdr_sink class derives from this class to be able to control the device
+ */
 class osmosdr_tx_control : public osmosdr_control
 {
 public:
-    osmosdr_tx_control(const std::string &device);
+    osmosdr_tx_control(const std::string &device_name);
     virtual ~osmosdr_tx_control();
-
-    /*! \brief Set frequency with Hz resolution.
-     *  \param freq The frequency in Hz
-     *
-     * This function takes a double parameter in order to allow using engineering
-     * notation in GRC.
-     *
-     * \see set_center_freq()
-     */
-    int set_center_freq(double freq);
-
-    double get_center_freq();
-
-    /*! \brief Set new frequency correction.
-     *  \param ppm The new frequency correction in parts per million
-     *
-     *  TODO: document recommended carrection values (if any)
-     */
-    int set_freq_correction(int ppm);
-
-    /*! \brief Set DC offset correction.
-     *  \param in_phase DC correction for I component (-1.0 to 1.0)
-     *  \param quadrature DC correction for Q component (-1.0 to 1.0)
-     *
-     * Set DC offset correction in the device. Default is 0.0.
-     */
-    int set_dc_correction(double in_phase, double quadrature);
-
-    /*! \brief Set IQ phase and gain balance.
-     *  \param gain The gain correction (-1.0 to 1.0)
-     *  \param phase The phase correction (-1.0 to 1.0)
-     *
-     * Set IQ phase and gain balance in the device. The default values
-     * are 0.0 for phase and 1.0 for gain.
-     */
-    int set_iq_correction(double gain, double phase);
 
     /*! TODO: add more */
 };

@@ -39,9 +39,9 @@
  * a boost shared_ptr.  This is effectively the public constructor.
  */
 osmosdr_sink_c_sptr
-osmosdr_make_sink_c (const std::string &device)
+osmosdr_make_sink_c (const std::string &device_name)
 {
-  return gnuradio::get_initial_sptr(new osmosdr_sink_c (device));
+  return gnuradio::get_initial_sptr(new osmosdr_sink_c (device_name));
 }
 
 /*
@@ -61,13 +61,24 @@ static const int MAX_OUT = 0;	// maximum number of output streams
 /*
  * The private constructor
  */
-osmosdr_sink_c::osmosdr_sink_c (const std::string & device)
-  : gr_hier_block2 ("sink_c",
+osmosdr_sink_c::osmosdr_sink_c (const std::string & device_name)
+  : gr_hier_block2 ("osmosdr_sink_c",
         gr_make_io_signature (MIN_IN, MAX_IN, sizeof (gr_complex)),
-        gr_make_io_signature (MIN_OUT, MAX_OUT, sizeof (gr_complex)))
+        gr_make_io_signature (MIN_OUT, MAX_OUT, sizeof (gr_complex))),
+    osmosdr_tx_control(device_name)
 {
-  // nothing else required in this example
-  throw std::runtime_error("OsmoSDR sink not yet implemented");
+    throw std::runtime_error("FIXME: OsmoSDR sink is not yet implemented");
+
+    /* Audio sink; sample rate is 96kHz by default */
+    audio_sink::sptr snk = audio_make_sink(96000, audio_dev_name(), true);
+
+    gr_complex_to_real_sptr real_part = gr_make_complex_to_real(1);
+    gr_complex_to_imag_sptr imag_part = gr_make_complex_to_imag(1);
+
+    connect(self(), 0, real_part, 0);
+    connect(self(), 0, imag_part, 0);
+    connect(imag_part, 0, snk, 0); /* Left is I */
+    connect(real_part, 0, snk, 1); /* Right is Q */
 }
 
 /*
