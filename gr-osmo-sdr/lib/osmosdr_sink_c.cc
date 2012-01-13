@@ -39,9 +39,9 @@
  * a boost shared_ptr.  This is effectively the public constructor.
  */
 osmosdr_sink_c_sptr
-osmosdr_make_sink_c (const std::string &device_name)
+osmosdr_make_sink_c (const std::string &addr)
 {
-  return gnuradio::get_initial_sptr(new osmosdr_sink_c (device_name));
+  return gnuradio::get_initial_sptr(new osmosdr_sink_c (addr));
 }
 
 /*
@@ -61,11 +61,11 @@ static const int MAX_OUT = 0;	// maximum number of output streams
 /*
  * The private constructor
  */
-osmosdr_sink_c::osmosdr_sink_c (const std::string & device_name)
+osmosdr_sink_c::osmosdr_sink_c (const std::string & addr)
   : gr_hier_block2 ("osmosdr_sink_c",
         gr_make_io_signature (MIN_IN, MAX_IN, sizeof (gr_complex)),
         gr_make_io_signature (MIN_OUT, MAX_OUT, sizeof (gr_complex))),
-    osmosdr_tx_control(device_name)
+    osmosdr_tx_control(addr)
 {
     throw std::runtime_error("FIXME: OsmoSDR sink is not yet implemented");
 

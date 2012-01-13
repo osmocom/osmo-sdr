@@ -48,7 +48,7 @@ typedef boost::shared_ptr<osmosdr_source_c> osmosdr_source_c_sptr;
  * constructor is private.  osmosdr_make_source_c is the public
  * interface for creating new instances.
  */
-OSMOSDR_API osmosdr_source_c_sptr osmosdr_make_source_c (const std::string & device_name = "");
+OSMOSDR_API osmosdr_source_c_sptr osmosdr_make_source_c (const std::string & addr = "");
 
 /*!
  * \brief Provides a stream of complex samples.
@@ -63,12 +63,12 @@ private:
   // The friend declaration allows osmosdr_make_source_c to
   // access the private constructor.
 
-  friend OSMOSDR_API osmosdr_source_c_sptr osmosdr_make_source_c (const std::string & device_name);
+  friend OSMOSDR_API osmosdr_source_c_sptr osmosdr_make_source_c (const std::string & addr);
 
   /*!
    * \brief Provides a stream of complex samples.
    */
-  osmosdr_source_c (const std::string & device_name);  	// private constructor
+  osmosdr_source_c (const std::string & addr);  	// private constructor
 
  public:
   ~osmosdr_source_c ();	// public destructor

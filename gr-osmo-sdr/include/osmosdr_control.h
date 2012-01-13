@@ -11,9 +11,13 @@
 class osmosdr_control
 {
 public:
-    osmosdr_control(const std::string &device_name);
+    osmosdr_control(const std::string &addr);
     virtual ~osmosdr_control();
 
+    /*!
+     * Discovers all devices connected to the host computer.
+     * \return a vector of device addresses
+     */
     static std::vector< std::string > find_devices();
 
 protected:
@@ -27,7 +31,7 @@ protected:
 class osmosdr_rx_control : public osmosdr_control
 {
 public:
-    osmosdr_rx_control(const std::string &device_name);
+    osmosdr_rx_control(const std::string &addr);
     virtual ~osmosdr_rx_control();
 #if 0
     /*!
@@ -179,7 +183,7 @@ public:
 class osmosdr_tx_control : public osmosdr_control
 {
 public:
-    osmosdr_tx_control(const std::string &device_name);
+    osmosdr_tx_control(const std::string &addr);
     virtual ~osmosdr_tx_control();
 
     /*! TODO: add more */
