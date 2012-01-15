@@ -1,0 +1,54 @@
+This builds a USB DFU compatible boot loader for sam3u based boards.
+
+try
+	make BOARD=at91sam3u-ek
+or
+	make BOARD=osmo-sdr
+depending on your board type.
+
+The result is a < 16kBytes file in the ./bin/ subdirectory, which you can
+flash using JTAG, SAM-BA or rum-ba to the beginning of FLASH0.
+
+The DFU loader will check in early boot if the "DFU button" is set.  If yes,
+it will enter the DFU mode, if not it continuest to boot directly the
+application.
+
+DFU button mappings:
+	at91sam3u-ek:	Button marked PB-LEFT on the board
+	osmo-sdr:	PA12 (can be closed with a jumper on the header)
+
+The regular application program can change from run-time to DFU mode quite
+easily.  In fact, this happens using a standardized USB control request and is
+thus already implemented in the at91lib.git on git.gnumonks.org.
+
+You can switch the device from runtime into DFU mode using
+	dfu-util -e -d 0x16c0:0x0763
+
+After that, you can flash a new application image into the respective partition using
+	dfu-util -d 0x16c0:0x0763 -a0 -D ./bin/my-foobar-project-dfu.bin
+
+which should show something like:
+
+Opening DFU capable USB device... ID 16c0:0763
+Run-time device DFU version 0100
+Found DFU: [16c0:0763] devnum=0, cfg=1, intf=0, alt=0, name="OsmoSDR DFU Interface - Application Partition"
+[...]
+Starting download: [##################################################] finished!
+state(7) = dfuMANIFEST, status(0) = No error condition is present
+state(2) = dfuIDLE, status(0) = No error condition is present
+
+
+However, that application has to be built using a compatible linker script.
+
+building application firmware for DFU
+=====================================
+
+This needs a special linker script which is implemented as dfu.lds in the
+at91lib repository on git.gnumonks.org.  You can then build your project to
+get linked to the "application partition" using
+	make dfu
+in the respective project directory
+
+There is a 'usb-fast-audi-source' project that can be used for demonstration
+purpose, it has 'make BOARD=osmo-sdr dfu' support
+
