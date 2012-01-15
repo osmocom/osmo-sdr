@@ -1,0 +1,7 @@
+sysmocom - systems for mobile communications GmbH
+OsmoSDR Software Defined Radio
+OsmoSDR Device Firmware Upgrade
+OsmoSDR DFU Interface - Application Partition
+OsmoSDR DFU Interface - Bootloader Partition
+OsmoSDR DFU Interface - RAM
+OsmoSDR DFU Interface - FPGA
