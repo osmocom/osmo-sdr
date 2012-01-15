@@ -1,0 +1,3 @@
+
+Please use "make dfu" in order to build an image that can be flahed using dfu-util
+
