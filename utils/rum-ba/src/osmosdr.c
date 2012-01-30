@@ -2,8 +2,9 @@
 #include <unistd.h>
 #include "osmosdr.h"
 #include "sam3u.h"
+#include "lattice/hardware.h"
 
-int osmoSDRDetect(int fd)
+int osmoSDRDetect(HANDLE fd)
 {
 	uint32_t chipID;
 
@@ -20,7 +21,7 @@ int osmoSDRDetect(int fd)
 	return 0;
 }
 
-int osmoSDRPrintUID(int fd, int bank)
+int osmoSDRPrintUID(HANDLE fd, int bank)
 {
 	uint8_t uniqueID[16];
 	int i;
@@ -38,7 +39,7 @@ int osmoSDRPrintUID(int fd, int bank)
 	return 0;
 }
 
-int osmoSDRBlink(int fd)
+int osmoSDRBlink(HANDLE fd)
 {
 	int i;
 
@@ -68,12 +69,16 @@ int osmoSDRBlink(int fd)
 	return 0;
 }
 
-int osmoSDRRamLoad(int fd, void* bin, size_t binSize)
+int osmoSDRRamLoad(HANDLE fd, const void* bin, size_t binSize)
 {
 	size_t ofs;
 	uint32_t tmp;
 
+#ifdef WINDOWS
+	printf("Uploading %u bytes @ 0x20001000", binSize);
+#else
 	printf("Uploading %zu bytes @ 0x20001000", binSize);
+#endif
 
 	for(ofs = 0; ofs < binSize; ofs += 4) {
 		if(sam3uWrite32(fd, 0x20001000 + ofs, ((uint32_t*)bin)[ofs / 4]) < 0)
@@ -98,7 +103,37 @@ int osmoSDRRamLoad(int fd, void* bin, size_t binSize)
 	return 0;
 }
 
-int osmoSDRFlash(int fd, void* bin, size_t binSize)
+int osmoSDRFlashMCU(HANDLE fd, const void* bin, size_t binSize)
 {
 	return sam3uFlash(fd, 0, bin, binSize);
+}
+
+// HACK
+short int ispEntryPoint();
+
+int osmoSDRFlashFPGA(HANDLE fd, const void* algo, size_t algoSize, const void* bin, size_t binSize)
+{
+	g_ispFd = fd;
+	g_ispAlgo = (uint8_t*)algo;
+	g_ispAlgoSize = algoSize;
+	g_ispData = (uint8_t*)bin;
+	g_ispDataSize = binSize;
+
+	if(sam3uWrite32(fd, 0x400e0410, (1 << 11)) < 0)
+		return -1;
+
+	if(sam3uWrite32(fd, 0x400e0e00 + 0x44, (1 << 5) | (1 << 6) | (1 << 7) | (1 << 8)) < 0)
+		return -1;
+	if(sam3uWrite32(fd, 0x400e0e00 + 0x60, (1 << 5) | (1 << 6) | (1 << 7) | (1 << 8)) < 0)
+		return -1;
+	if(sam3uWrite32(fd, 0x400e0e00 + 0x54, (1 << 5) | (1 << 6) | (1 << 7) | (1 << 8)) < 0)
+		return -1;
+	if(sam3uWrite32(fd, 0x400e0e00 + 0x10, (1 << 5) | (1 << 7) | (1 << 8)) < 0)
+		return -1;
+	if(sam3uWrite32(fd, 0x400e0e00 + 0x00, (1 << 5) | (1 << 6) | (1 << 7) | (1 << 8)) < 0)
+		return -1;
+
+	ispEntryPoint();
+
+	return 0;
 }

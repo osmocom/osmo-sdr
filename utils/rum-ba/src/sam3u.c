@@ -5,7 +5,7 @@
 #include "sam3u.h"
 #include "serial.h"
 
-int sam3uRead32(int fd, uint32_t address, uint32_t* value)
+int sam3uRead32(HANDLE fd, uint32_t address, uint32_t* value)
 {
 	char str[32];
 	sprintf(str, "w%08X,4#", address);
@@ -27,7 +27,7 @@ int sam3uRead32(int fd, uint32_t address, uint32_t* value)
 	return 0;
 }
 
-int sam3uRead16(int fd, uint32_t address, uint16_t* value)
+int sam3uRead16(HANDLE fd, uint32_t address, uint16_t* value)
 {
 	char str[32];
 	sprintf(str, "h%08X,2#", address);
@@ -49,7 +49,7 @@ int sam3uRead16(int fd, uint32_t address, uint16_t* value)
 	return 0;
 }
 
-int sam3uRead8(int fd, uint32_t address, uint8_t* value)
+int sam3uRead8(HANDLE fd, uint32_t address, uint8_t* value)
 {
 	char str[32];
 	sprintf(str, "o%08X,1#", address);
@@ -71,7 +71,7 @@ int sam3uRead8(int fd, uint32_t address, uint8_t* value)
 	return 0;
 }
 
-int sam3uWrite32(int fd, uint32_t address, uint32_t value)
+int sam3uWrite32(HANDLE fd, uint32_t address, uint32_t value)
 {
 	char str[32];
 	sprintf(str, "W%08X,%08X#", address, value);
@@ -82,7 +82,7 @@ int sam3uWrite32(int fd, uint32_t address, uint32_t value)
 	return 0;
 }
 
-int sam3uWrite16(int fd, uint32_t address, uint16_t value)
+int sam3uWrite16(HANDLE fd, uint32_t address, uint16_t value)
 {
 	char str[32];
 	sprintf(str, "H%08X,%04X#", address, value);
@@ -93,7 +93,7 @@ int sam3uWrite16(int fd, uint32_t address, uint16_t value)
 	return 0;
 }
 
-int sam3uWrite8(int fd, uint32_t address, uint8_t value)
+int sam3uWrite8(HANDLE fd, uint32_t address, uint8_t value)
 {
 	char str[32];
 	sprintf(str, "O%08X,%02X#", address, value);
@@ -104,7 +104,7 @@ int sam3uWrite8(int fd, uint32_t address, uint8_t value)
 	return 0;
 }
 
-int sam3uRun(int fd, uint32_t address)
+int sam3uRun(HANDLE fd, uint32_t address)
 {
 	char str[32];
 	sprintf(str, "G%08X#", address);
@@ -113,9 +113,9 @@ int sam3uRun(int fd, uint32_t address)
 	return 0;
 }
 
-int sam3uDetect(int fd, uint32_t* chipID)
+int sam3uDetect(HANDLE fd, uint32_t* chipID)
 {
-	char c;
+	uint8_t c;
 
 	while(serialGetC(fd, &c, 100) >= 0) ;
 
@@ -130,7 +130,7 @@ int sam3uDetect(int fd, uint32_t* chipID)
 	return sam3uRead32(fd, 0x400e0740, chipID);
 }
 
-int sam3uReadUniqueID(int fd, int bank, uint8_t* uniqueID)
+int sam3uReadUniqueID(HANDLE fd, int bank, uint8_t* uniqueID)
 {
 	uint32_t regBase;
 	uint32_t flashBase;
@@ -175,7 +175,7 @@ int sam3uReadUniqueID(int fd, int bank, uint8_t* uniqueID)
 	return 0;
 }
 
-int sam3uFlash(int fd, int bank, void* bin, size_t binSize)
+int sam3uFlash(HANDLE fd, int bank, const void* bin, size_t binSize)
 {
 	uint32_t regBase;
 	uint32_t flashBase;

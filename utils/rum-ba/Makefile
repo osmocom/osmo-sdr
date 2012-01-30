@@ -14,7 +14,10 @@ C_SOURCES=\
 	src/osmosdr.c \
 	src/sam3u.c \
 	src/serial.c \
-	src/utils.c
+	src/utils.c \
+	src/lattice/hardware.c \
+	src/lattice/slim_pro.c \
+	src/lattice/slim_vme.c
 
 # general compiler flags
 CFLAGS=-Wall

@@ -2,11 +2,13 @@
 #define INCLUDE_OSMOSDR_H
 
 #include <stdint.h>
+#include "utils.h"
 
-int osmoSDRDetect(int fd);
-int osmoSDRPrintUID(int fd, int bank);
-int osmoSDRBlink(int fd);
-int osmoSDRRamLoad(int fd, void* bin, size_t binSize);
-int osmoSDRFlash(int fd, void* bin, size_t binSize);
+int osmoSDRDetect(HANDLE fd);
+int osmoSDRPrintUID(HANDLE fd, int bank);
+int osmoSDRBlink(HANDLE fd);
+int osmoSDRRamLoad(HANDLE fd, const void* bin, size_t binSize);
+int osmoSDRFlashMCU(HANDLE fd, const void* bin, size_t binSize);
+int osmoSDRFlashFPGA(HANDLE fd, const void* algo, size_t algoSize, const void* bin, size_t binSize);
 
 #endif // INCLUDE_OSMOSDR_H
