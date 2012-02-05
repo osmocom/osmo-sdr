@@ -1,11 +1,11 @@
 INCLUDE(FindPkgConfig)
-PKG_CHECK_MODULES(PC_GNURADIO_AUDIO QUIET gnuradio-audio)
+PKG_CHECK_MODULES(PC_GNURADIO_AUDIO gnuradio-audio)
 
 FIND_PATH(
     GNURADIO_AUDIO_INCLUDE_DIRS
     NAMES gr_audio_api.h
     HINTS $ENV{GNURADIO_AUDIO_DIR}/include/gnuradio
-        ${PC_GNURADIO_AUDIO_INCLUDE_DIR}
+        ${PC_GNURADIO_AUDIO_INCLUDEDIR}
     PATHS /usr/local/include/gnuradio
           /usr/include/gnuradio
 )
