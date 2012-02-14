@@ -47,6 +47,7 @@
 
 #include <tuner_e4k.h>
 #include <si570.h>
+#include <osdr_fpga.h>
 
 #define SSC_MCK    49152000
 
@@ -70,7 +71,7 @@
 //------------------------------------------------------------------------------
 
 /// List of pins to configure.
-static const Pin pins[] = {PINS_TWI0, PIN_PCK0, PINS_LEDS,
+static const Pin pins[] = {PINS_TWI0, PIN_PCK0, PINS_LEDS, PINS_SPI0,
 			   PINS_MISC, PINS_SSC, PINS_FPGA_JTAG};
 
 static Twid twid;
@@ -106,6 +107,7 @@ static void DisplayMenu(void)
 		"[r] si570 regdump\r\n"
 		"[q] 100 MHz\r\n"
 		"[w] 101 MHz\r\n"
+		"[p] FPGA ID reg\r\n"
 		"\r\n"
 		);
 }
@@ -190,6 +192,15 @@ int main(void)
 		break;
 	case 'w':
 		e4k_tune_freq(&e4k, 101000000);
+		break;
+	case 'p':
+		{
+			uint32_t reg;
+			osdr_fpga_power(1);
+			osdr_fpga_init(SSC_MCK);
+			reg = osdr_fpga_reg_read(OSDR_FPGA_REG_ID);
+			printf("FPGA ID REG: 0x%08x\n\r", reg);
+		}
 		break;
 	}
     }
