@@ -53,5 +53,5 @@ install(
     FILES
     osmosdr_swig.i
     ${CMAKE_CURRENT_BINARY_DIR}/osmosdr_swig_doc.i
-    DESTINATION $(GR_INCLUDE_DIR)/osmosdr/swig
+    DESTINATION ${GR_INCLUDE_DIR}/osmosdr/swig
 )
