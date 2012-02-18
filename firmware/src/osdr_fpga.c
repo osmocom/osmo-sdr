@@ -22,8 +22,6 @@
 #include <pio/pio.h>
 #include <spi/spi.h>
 
-static const Pin fon_pin = PIN_FON;
-
 #define BOARD_OSDR_SPI			AT91C_BASE_SPI0
 #define BOARD_OSDR_FPGA_SPI_NPCS	0
 
@@ -34,6 +32,9 @@ static const Pin fon_pin = PIN_FON;
 		 | SPI_SCBR(OSDR_FPGA_SPCK_MAX, masterClock) \
 		 | SPI_DLYBS(50, masterClock) \
 		 | SPI_DLYBCT(0, masterClock))
+
+static const Pin fon_pin = PIN_FON;
+static AT91S_SPI *spi = BOARD_OSDR_SPI;
 
 void osdr_fpga_power(int on)
 {
@@ -52,30 +53,38 @@ void osdr_fpga_init(uint32_t masterClock)
 	SPI_Enable(BOARD_OSDR_SPI);
 }
 
+static void write_byte(uint8_t byte)
+{
+	while ((spi->SPI_SR & AT91C_SPI_TDRE) == 0) {
+		//printf("W SR=0x%08x  ", spi->SPI_SR);
+		if (spi->SPI_SR & AT91C_SPI_RDRF)
+			SPI_Read(BOARD_OSDR_SPI);
+	}
+	spi->SPI_TDR = byte | SPI_PCS(0);
+}
+
+
 uint32_t osdr_fpga_reg_read(uint8_t reg)
 {
 	uint32_t val;
 
-	/* write first byte: command + read */
-	SPI_Write(BOARD_OSDR_SPI, 0, 0x80 | (reg & 0x7f));
-	while (!SPI_IsFinished(BOARD_OSDR_SPI));
+	/* make sure that previous transfers have terminated */
+	while ((spi->SPI_SR & AT91C_SPI_TXEMPTY) == 0);
+
+	write_byte(0x80 | (reg & 0x7f));
+	/* dummy read for command byte transfer */
 	SPI_Read(BOARD_OSDR_SPI);
 
-	/* write four more octets and read back the value */
-	SPI_Write(BOARD_OSDR_SPI, 0, 0);
-	while (!SPI_IsFinished(BOARD_OSDR_SPI));
+	write_byte(0);
 	val = SPI_Read(BOARD_OSDR_SPI) << 24;
 
-	SPI_Write(BOARD_OSDR_SPI, 0, 0);
-	while (!SPI_IsFinished(BOARD_OSDR_SPI));
+	write_byte(0);
 	val |= SPI_Read(BOARD_OSDR_SPI) << 16;
 
-	SPI_Write(BOARD_OSDR_SPI, 0, 0);
-	while (!SPI_IsFinished(BOARD_OSDR_SPI));
+	write_byte(0);
 	val |= SPI_Read(BOARD_OSDR_SPI) << 8;
 
-	SPI_Write(BOARD_OSDR_SPI, 0, 0);
-	while (!SPI_IsFinished(BOARD_OSDR_SPI));
+	write_byte(0);
 	val |= SPI_Read(BOARD_OSDR_SPI);
 
 	return val;
@@ -83,25 +92,19 @@ uint32_t osdr_fpga_reg_read(uint8_t reg)
 
 void osdr_fpga_reg_write(uint8_t reg, uint32_t val)
 {
-	/* write first byte: command + read */
-	SPI_Write(BOARD_OSDR_SPI, 0, reg & 0x7f);
-	while (!SPI_IsFinished(BOARD_OSDR_SPI));
-	SPI_Read(BOARD_OSDR_SPI);
+	/* make sure that previous transfers have terminated */
+	while ((spi->SPI_SR & AT91C_SPI_TXEMPTY) == 0);
 
-	/* write four more octets and read back the value */
-	SPI_Write(BOARD_OSDR_SPI, 0, (val >> 24) & 0xff);
-	while (!SPI_IsFinished(BOARD_OSDR_SPI));
-	SPI_Read(BOARD_OSDR_SPI);
+	write_byte(reg & 0x7f);
+	write_byte((val >> 24) & 0xff);
+	write_byte((val >> 16) & 0xff);
+	write_byte((val >> 8) & 0xff);
+	write_byte((val >> 0) & 0xff);
 
-	SPI_Write(BOARD_OSDR_SPI, 0, (val >> 16) & 0xff);
+	/* wait until transfer has finished */
 	while (!SPI_IsFinished(BOARD_OSDR_SPI));
-	SPI_Read(BOARD_OSDR_SPI);
 
-	SPI_Write(BOARD_OSDR_SPI, 0, (val >> 8) & 0xff);
-	while (!SPI_IsFinished(BOARD_OSDR_SPI));
-	SPI_Read(BOARD_OSDR_SPI);
-
-	SPI_Write(BOARD_OSDR_SPI, 0, (val) & 0xff);
-	while (!SPI_IsFinished(BOARD_OSDR_SPI));
-	SPI_Read(BOARD_OSDR_SPI);
+	/* make sure to flush any received characters */
+	while (spi->SPI_SR & AT91C_SPI_RDRF)
+		SPI_Read(BOARD_OSDR_SPI);
 }
