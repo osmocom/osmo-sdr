@@ -97,6 +97,205 @@ static void power_peripherals(int on)
 	}
 }
 
+struct reg {
+	unsigned int offset;
+	const char *name;
+};
+
+struct reg dma_regs[] = {
+	{ 0,	"GCFG" },
+	{ 4, 	"EN" },
+	{ 8,	"SREQ" },
+	{ 0xC,	"CREQ" },
+	{ 0x10,	"LAST" },
+	{ 0x20, "EBCIMR" },
+	{ 0x24, "EBCISR" },
+	{ 0x30, "CHSR" },
+	{ 0,	NULL}
+};
+
+struct reg dma_ch_regs[] = {
+	{ 0,	"SADDR" },
+	{ 4,	"DADDR" },
+	{ 8,	"DSCR" },
+	{ 0xC,	"CTRLA" },
+	{ 0x10, "CTRLB" },
+	{ 0x14, "CFG" },
+	{ 0,	NULL}
+};
+
+void reg_dump(struct reg *regs, uint32_t *base)
+{
+	struct reg *r;
+	for (r = regs; r->offset || r->name; r++) {
+		uint32_t *addr = ((uint8_t *)base + r->offset);
+		printf("%s\t%08x:\t%08x\n\r", r->name, addr, *addr);
+	}
+}
+
+static void dma_dump_regs(void)
+{
+	reg_dump(dma_regs, AT91C_BASE_HDMA);
+	reg_dump(dma_ch_regs, (uint8_t *)AT91C_BASE_HDMA_CH_0 + (BOARD_SSC_DMA_CHANNEL*0x28));
+}
+
+
+static void ssc_irq_hdlr(void)
+{
+	AT91S_SSC *ssc = AT91C_BASE_SSC0;
+	uint8_t status = ssc->SSC_SR;
+
+}
+
+static DmaLinkList	LLI_CH[MAX_SSC_LLI_SIZE];
+static int dma_complete = 0;
+static const uint32_t dummy = 0xdeadbeef;
+
+static void ssc_dma_single(void *dest, unsigned int len)
+{
+	LED_Set(0);
+	dma_complete = 0;
+
+	memset(dest, 0, len);
+
+	/* clear any pending interrupts */
+	DMA_DisableChannel(BOARD_SSC_DMA_CHANNEL);
+	DMA_GetStatus();
+	DMA_SetSourceBufferMode(BOARD_SSC_DMA_CHANNEL, DMA_TRANSFER_SINGLE,
+				(AT91C_HDMA_SRC_ADDRESS_MODE_FIXED >> 24));
+	DMA_SetSourceBufferSize(BOARD_SSC_DMA_CHANNEL,
+#if 0
+				len>>2 | AT91C_HDMA_SCSIZE_4 | AT91C_HDMA_DCSIZE_4,
+				AT91C_HDMA_SRC_WIDTH_WORD >> 24,
+				AT91C_HDMA_DST_WIDTH_WORD >> 28, 0);
+#else
+				len>>2 | AT91C_HDMA_SCSIZE_1 | AT91C_HDMA_DCSIZE_1,
+				AT91C_HDMA_SRC_WIDTH_BYTE >> 24,
+				AT91C_HDMA_DST_WIDTH_BYTE >> 28, 0);
+#endif
+	DMA_SetDestBufferMode(BOARD_SSC_DMA_CHANNEL, DMA_TRANSFER_SINGLE,
+				(AT91C_HDMA_DST_ADDRESS_MODE_INCR >> 28));
+	DMA_SetFlowControl(BOARD_SSC_DMA_CHANNEL, AT91C_HDMA_FC_PER2MEM >> 21);
+	//DMA_SetFlowControl(BOARD_SSC_DMA_CHANNEL, AT91C_HDMA_FC_MEM2MEM >> 21);
+	DMA_SetConfiguration(BOARD_SSC_DMA_CHANNEL, BOARD_SSC_DMA_HW_SRC_REQ_ID
+				| BOARD_SSC_DMA_HW_DEST_REQ_ID
+				| AT91C_HDMA_SRC_H2SEL_HW
+				| AT91C_HDMA_DST_H2SEL_HW
+				| AT91C_HDMA_SOD_DISABLE
+				| AT91C_HDMA_FIFOCFG_LARGESTBURST);
+	DMA_SetSourceAddr(BOARD_SSC_DMA_CHANNEL, &AT91C_BASE_SSC0->SSC_RHR);
+	//DMA_SetSourceAddr(BOARD_SSC_DMA_CHANNEL, &dummy);
+	DMA_SetDestinationAddr(BOARD_SSC_DMA_CHANNEL, (unsigned int) dest);
+	dma_dump_regs();
+	DMA_EnableChannel(BOARD_SSC_DMA_CHANNEL);
+
+	printf("Initialized Single DMA (len=%u)\n\r", len);
+}
+#define DMA_CTRLA	(AT91C_HDMA_SRC_WIDTH_WORD|AT91C_HDMA_DST_WIDTH_WORD|AT91C_HDMA_SCSIZE_1|AT91C_HDMA_DCSIZE_1)
+#define DMA_CTRLB 	(AT91C_HDMA_DST_DSCR_FETCH_FROM_MEM |	\
+			 AT91C_HDMA_DST_ADDRESS_MODE_INCR |	\
+			 AT91C_HDMA_SRC_DSCR_FETCH_DISABLE |	\
+			 AT91C_HDMA_SRC_ADDRESS_MODE_FIXED |	\
+			 AT91C_HDMA_FC_MEM2MEM)
+			 //AT91C_HDMA_FC_PER2MEM)
+
+static void ssc_dma_llc(void *dest, unsigned int len)
+{
+	LED_Set(0);
+	dma_complete = 0;
+
+	memset(dest, 0, len);
+
+	LLI_CH[0].sourceAddress = &AT91C_BASE_SSC0->SSC_RHR;
+	//LLI_CH[0].sourceAddress = &dummy;
+	LLI_CH[0].destAddress = (unsigned int) dest;
+	LLI_CH[0].controlA = len/4 | DMA_CTRLA;
+	LLI_CH[0].controlB = DMA_CTRLB;
+	LLI_CH[0].descriptor = 0;
+
+	/* clear any pending interrupts */
+	DMA_DisableChannel(BOARD_SSC_DMA_CHANNEL);
+	DMA_GetStatus();
+	DMA_SetDescriptorAddr(BOARD_SSC_DMA_CHANNEL, (unsigned int)&LLI_CH[0]);
+	DMA_SetSourceAddr(BOARD_SSC_DMA_CHANNEL, &AT91C_BASE_SSC0->SSC_RHR);
+	DMA_SetSourceBufferMode(BOARD_SSC_DMA_CHANNEL, DMA_TRANSFER_LLI,
+				(AT91C_HDMA_SRC_ADDRESS_MODE_FIXED >> 24));
+	DMA_SetDestBufferMode(BOARD_SSC_DMA_CHANNEL, DMA_TRANSFER_LLI,
+				(AT91C_HDMA_DST_ADDRESS_MODE_INCR >> 28));
+#if 1
+	DMA_SetFlowControl(BOARD_SSC_DMA_CHANNEL, AT91C_HDMA_FC_PER2MEM >> 21);
+	DMA_SetConfiguration(BOARD_SSC_DMA_CHANNEL, BOARD_SSC_DMA_HW_SRC_REQ_ID \
+				| BOARD_SSC_DMA_HW_DEST_REQ_ID \
+				| AT91C_HDMA_SRC_H2SEL_HW \
+				| AT91C_HDMA_DST_H2SEL_HW \
+				| AT91C_HDMA_SOD_DISABLE \
+				| AT91C_HDMA_FIFOCFG_LARGESTBURST);
+#else
+	DMA_SetFlowControl(BOARD_SSC_DMA_CHANNEL, AT91C_HDMA_FC_MEM2MEM >> 21);
+	DMA_SetConfiguration(BOARD_SSC_DMA_CHANNEL, AT91C_HDMA_FIFOCFG_ENOUGHSPACE);
+#endif
+
+	dma_dump_regs();
+	printf("enabling channel...\n\r");
+	DMA_EnableChannel(BOARD_SSC_DMA_CHANNEL);
+
+#if 0
+	printf("src last...\n\r");
+	AT91C_BASE_HDMA->HDMA_LAST = (1 << BOARD_SSC_DMA_CHANNEL);
+	printf("src xfer...\n\r");
+	AT91C_BASE_HDMA->HDMA_CREQ = (1 << BOARD_SSC_DMA_CHANNEL);
+	//while (AT91C_BASE_HDMA->HDMA_CREQ & (1 << BOARD_SSC_DMA_CHANNEL));
+
+	printf("dst xfer...\n\r");
+	AT91C_BASE_HDMA->HDMA_LAST = (2 << BOARD_SSC_DMA_CHANNEL);
+	AT91C_BASE_HDMA->HDMA_CREQ = (2 << BOARD_SSC_DMA_CHANNEL);
+#endif
+
+	printf("Initialized Single DMA (len=%u)\n\r", len);
+}
+
+
+#define BTC(N)	(1 << N)
+#define CBTC(N)	(1 << 8+N)
+#define	ERR(N)	(1 << 16+N)
+
+static void dma_irq_hdlr(void)
+{
+	unsigned int status = DMA_GetStatus();
+	LED_Clear(0);
+
+	if (status & BTC(BOARD_SSC_DMA_CHANNEL)) {
+		dma_complete = 1;
+		LED_Clear(0);
+	}
+}
+
+static int ssc_init(void)
+{
+	SSC_DisableReceiver(AT91C_BASE_SSC0);
+	SSC_Configure(AT91C_BASE_SSC0, AT91C_ID_SSC0, 0, BOARD_MCK);
+	SSC_ConfigureReceiver(AT91C_BASE_SSC0, AT91C_SSC_CKS_RK | AT91C_SSC_CKO_NONE |
+					 AT91C_SSC_CKG_NONE | AT91C_SSC_START_RISE_RF,
+					 32-1 );
+#if 0
+	IRQ_ConfigureIT(AT91C_ID_SSC0, 0, ssc_irq_hdlr);
+	IRQ_EnableIT(AT91C_ID_SSC0);
+
+	//SSC_EnableInterrupts(AT91C_BASE_SSC0, AT91C_SSC_RXRDY | AT91C_SSC_OVRUN);
+#endif
+	SSC_EnableReceiver(AT91C_BASE_SSC0);
+
+	/* Enable DMA controller and register interrupt handler */
+	PMC_EnablePeripheral(AT91C_ID_HDMA);
+	DMA_Enable();
+	IRQ_ConfigureIT(AT91C_ID_HDMA, 0, dma_irq_hdlr);
+	//IRQ_EnableIT(AT91C_ID_HDMA);
+	DMA_EnableIt(BTC(BOARD_SSC_DMA_CHANNEL) | CBTC(BOARD_SSC_DMA_CHANNEL) |
+		     ERR(BOARD_SSC_DMA_CHANNEL));
+
+	printf("initialzied SSC\n\r");
+}
+
 static void DisplayMenu(void)
 {
 	printf("Menu:\r\n"
@@ -108,9 +307,14 @@ static void DisplayMenu(void)
 		"[q] 100 MHz\r\n"
 		"[w] 101 MHz\r\n"
 		"[p] FPGA ID reg\r\n"
+		"[a] FPGA ADC reg\r\n"
+		"[s] SSC init\r\n"
+		"[S] SSC single DMA xfer\r\n"
 		"\r\n"
 		);
 }
+
+static uint32_t dma_buf[1024/4];
 
 //------------------------------------------------------------------------------
 /// Main function
@@ -119,6 +323,7 @@ int main(void)
 {
     unsigned char key;
     unsigned char isValid;
+    static int freq = 800;
 
     // Configure all pins
     PIO_Configure(pins, PIO_LISTSIZE(pins));
@@ -161,6 +366,13 @@ int main(void)
     printf("-- %s\n\r", BOARD_NAME);
     printf("-- Compiled: %s %s --\n\r", __DATE__, __TIME__);
 
+	power_peripherals(1);
+	si570_init(&si570, &twid, SI570_I2C_ADDR);
+	set_si570_freq(30000000);
+	osdr_fpga_init(SSC_MCK);
+	osdr_fpga_reg_write(OSDR_FPGA_REG_ADC_TIMING, (1 << 8) | 255);
+	osdr_fpga_reg_write(OSDR_FPGA_REG_PWM1, (1 << 400) | 800);
+
     // Enter menu loop
     while (1) {
 
@@ -169,6 +381,7 @@ int main(void)
 
         // Process user input
         key = DBGU_GetChar();
+ 	//key = 0;
 
 	switch (key) {
 	case '0':
@@ -200,8 +413,43 @@ int main(void)
 			osdr_fpga_init(SSC_MCK);
 			reg = osdr_fpga_reg_read(OSDR_FPGA_REG_ID);
 			printf("FPGA ID REG: 0x%08x\n\r", reg);
+			osdr_fpga_reg_write(OSDR_FPGA_REG_ADC_TIMING, (1 << 8) | 255);
 		}
 		break;
+	case 'a':
+		printf("FPGA ADC: 0x%08x\n\r", osdr_fpga_reg_read(OSDR_FPGA_REG_ADC_VAL));
+		printf("FPGA PWM1: 0x%08x\n\r", osdr_fpga_reg_read(OSDR_FPGA_REG_PWM1));
+		printf("FPGA ADC TIMING: 0x%08x\n\r", osdr_fpga_reg_read(OSDR_FPGA_REG_ADC_TIMING));
+		break;
+	case '+':
+		freq += 100;
+		osdr_fpga_reg_write(OSDR_FPGA_REG_PWM1, ((freq/2) << 16) | freq);
+		break;
+	case '-':
+		freq -= 100;
+		osdr_fpga_reg_write(OSDR_FPGA_REG_PWM1, ((freq/2) << 16) | freq);
+		break;
+	case 's':
+		ssc_init();
+		break;
+	case 'S':
+		//ssc_dma_single(dma_buf, sizeof(dma_buf));
+		ssc_dma_llc(dma_buf, sizeof(dma_buf));
+		break;
+	}
+	//osdr_fpga_reg_write(OSDR_FPGA_REG_PWM1, ((freq/2) << 16) | freq);
+	printf("\t\t\tcur_ssc_data = 0x%08x\n\r", AT91C_BASE_SSC0->SSC_RHR);
+	{
+		int i;
+		for (i = 0; i < sizeof(dma_buf)/sizeof(dma_buf[0]); i++) {
+			if (i == 0 || dma_buf[i] != dma_buf[i-1])
+				printf("\t\t\tdma_ssc_data[%u] = 0x%08x\n\r", i, dma_buf[i]);
+		}
+	}
+	dma_dump_regs();
+	if (dma_complete) {
+		printf("=======> DMA complete\n\r");
+		dma_complete = 0;
 	}
     }
 }
