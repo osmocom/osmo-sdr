@@ -176,7 +176,6 @@ static void ssc_dma_single(void *dest, unsigned int len)
 	DMA_SetDestBufferMode(BOARD_SSC_DMA_CHANNEL, DMA_TRANSFER_SINGLE,
 				(AT91C_HDMA_DST_ADDRESS_MODE_INCR >> 28));
 	DMA_SetFlowControl(BOARD_SSC_DMA_CHANNEL, AT91C_HDMA_FC_PER2MEM >> 21);
-	//DMA_SetFlowControl(BOARD_SSC_DMA_CHANNEL, AT91C_HDMA_FC_MEM2MEM >> 21);
 	DMA_SetConfiguration(BOARD_SSC_DMA_CHANNEL, BOARD_SSC_DMA_HW_SRC_REQ_ID
 				| BOARD_SSC_DMA_HW_DEST_REQ_ID
 				| AT91C_HDMA_SRC_H2SEL_HW
@@ -191,13 +190,12 @@ static void ssc_dma_single(void *dest, unsigned int len)
 
 	printf("Initialized Single DMA (len=%u)\n\r", len);
 }
-#define DMA_CTRLA	(AT91C_HDMA_SRC_WIDTH_WORD|AT91C_HDMA_DST_WIDTH_WORD|AT91C_HDMA_SCSIZE_1|AT91C_HDMA_DCSIZE_1)
+#define DMA_CTRLA	(AT91C_HDMA_SRC_WIDTH_WORD|AT91C_HDMA_DST_WIDTH_WORD|AT91C_HDMA_SCSIZE_4|AT91C_HDMA_DCSIZE_4)
 #define DMA_CTRLB 	(AT91C_HDMA_DST_DSCR_FETCH_FROM_MEM |	\
 			 AT91C_HDMA_DST_ADDRESS_MODE_INCR |	\
 			 AT91C_HDMA_SRC_DSCR_FETCH_DISABLE |	\
 			 AT91C_HDMA_SRC_ADDRESS_MODE_FIXED |	\
-			 AT91C_HDMA_FC_MEM2MEM)
-			 //AT91C_HDMA_FC_PER2MEM)
+			 AT91C_HDMA_FC_PER2MEM)
 
 static void ssc_dma_llc(void *dest, unsigned int len)
 {
@@ -222,36 +220,20 @@ static void ssc_dma_llc(void *dest, unsigned int len)
 				(AT91C_HDMA_SRC_ADDRESS_MODE_FIXED >> 24));
 	DMA_SetDestBufferMode(BOARD_SSC_DMA_CHANNEL, DMA_TRANSFER_LLI,
 				(AT91C_HDMA_DST_ADDRESS_MODE_INCR >> 28));
-#if 1
+
 	DMA_SetFlowControl(BOARD_SSC_DMA_CHANNEL, AT91C_HDMA_FC_PER2MEM >> 21);
-	DMA_SetConfiguration(BOARD_SSC_DMA_CHANNEL, BOARD_SSC_DMA_HW_SRC_REQ_ID \
-				| BOARD_SSC_DMA_HW_DEST_REQ_ID \
+	DMA_SetConfiguration(BOARD_SSC_DMA_CHANNEL,
+				BOARD_SSC_DMA_HW_SRC_REQ_ID | BOARD_SSC_DMA_HW_DEST_REQ_ID
 				| AT91C_HDMA_SRC_H2SEL_HW \
-				| AT91C_HDMA_DST_H2SEL_HW \
+				| AT91C_HDMA_DST_H2SEL_SW \
 				| AT91C_HDMA_SOD_DISABLE \
 				| AT91C_HDMA_FIFOCFG_LARGESTBURST);
-#else
-	DMA_SetFlowControl(BOARD_SSC_DMA_CHANNEL, AT91C_HDMA_FC_MEM2MEM >> 21);
-	DMA_SetConfiguration(BOARD_SSC_DMA_CHANNEL, AT91C_HDMA_FIFOCFG_ENOUGHSPACE);
-#endif
 
 	dma_dump_regs();
 	printf("enabling channel...\n\r");
 	DMA_EnableChannel(BOARD_SSC_DMA_CHANNEL);
 
-#if 0
-	printf("src last...\n\r");
-	AT91C_BASE_HDMA->HDMA_LAST = (1 << BOARD_SSC_DMA_CHANNEL);
-	printf("src xfer...\n\r");
-	AT91C_BASE_HDMA->HDMA_CREQ = (1 << BOARD_SSC_DMA_CHANNEL);
-	//while (AT91C_BASE_HDMA->HDMA_CREQ & (1 << BOARD_SSC_DMA_CHANNEL));
-
-	printf("dst xfer...\n\r");
-	AT91C_BASE_HDMA->HDMA_LAST = (2 << BOARD_SSC_DMA_CHANNEL);
-	AT91C_BASE_HDMA->HDMA_CREQ = (2 << BOARD_SSC_DMA_CHANNEL);
-#endif
-
-	printf("Initialized Single DMA (len=%u)\n\r", len);
+	printf("Initialized LLC DMA (len=%u)\n\r", len);
 }
 
 
@@ -259,7 +241,7 @@ static void ssc_dma_llc(void *dest, unsigned int len)
 #define CBTC(N)	(1 << 8+N)
 #define	ERR(N)	(1 << 16+N)
 
-static void dma_irq_hdlr(void)
+void HDMA_IrqHandler(void)
 {
 	unsigned int status = DMA_GetStatus();
 	LED_Clear(0);
@@ -275,8 +257,9 @@ static int ssc_init(void)
 	SSC_DisableReceiver(AT91C_BASE_SSC0);
 	SSC_Configure(AT91C_BASE_SSC0, AT91C_ID_SSC0, 0, BOARD_MCK);
 	SSC_ConfigureReceiver(AT91C_BASE_SSC0, AT91C_SSC_CKS_RK | AT91C_SSC_CKO_NONE |
-					 AT91C_SSC_CKG_NONE | AT91C_SSC_START_RISE_RF,
-					 32-1 );
+					 AT91C_SSC_CKG_NONE | AT91C_SSC_START_FALL_RF |
+					 AT91C_SSC_CKI,
+					 AT91C_SSC_MSBF | 32-1 );
 #if 0
 	IRQ_ConfigureIT(AT91C_ID_SSC0, 0, ssc_irq_hdlr);
 	IRQ_EnableIT(AT91C_ID_SSC0);
@@ -288,8 +271,8 @@ static int ssc_init(void)
 	/* Enable DMA controller and register interrupt handler */
 	PMC_EnablePeripheral(AT91C_ID_HDMA);
 	DMA_Enable();
-	IRQ_ConfigureIT(AT91C_ID_HDMA, 0, dma_irq_hdlr);
-	//IRQ_EnableIT(AT91C_ID_HDMA);
+	IRQ_ConfigureIT(AT91C_ID_HDMA, 0, HDMA_IrqHandler);
+	IRQ_EnableIT(AT91C_ID_HDMA);
 	DMA_EnableIt(BTC(BOARD_SSC_DMA_CHANNEL) | CBTC(BOARD_SSC_DMA_CHANNEL) |
 		     ERR(BOARD_SSC_DMA_CHANNEL));
 
@@ -433,8 +416,10 @@ int main(void)
 		ssc_init();
 		break;
 	case 'S':
+		SSC_DisableReceiver(AT91C_BASE_SSC0);
 		//ssc_dma_single(dma_buf, sizeof(dma_buf));
 		ssc_dma_llc(dma_buf, sizeof(dma_buf));
+		SSC_EnableReceiver(AT91C_BASE_SSC0);
 		break;
 	}
 	//osdr_fpga_reg_write(OSDR_FPGA_REG_PWM1, ((freq/2) << 16) | freq);
@@ -444,6 +429,7 @@ int main(void)
 		for (i = 0; i < sizeof(dma_buf)/sizeof(dma_buf[0]); i++) {
 			if (i == 0 || dma_buf[i] != dma_buf[i-1])
 				printf("\t\t\tdma_ssc_data[%u] = 0x%08x\n\r", i, dma_buf[i]);
+			//break;
 		}
 	}
 	dma_dump_regs();
