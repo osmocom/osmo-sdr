@@ -45,7 +45,7 @@ BOARD = osmo-sdr
 # TRACE_LEVEL_ERROR      2
 # TRACE_LEVEL_FATAL      1
 # TRACE_LEVEL_NO_TRACE   0
-TRACE_LEVEL = 5
+TRACE_LEVEL = 3
 
 # Optimization level, put in comment for debugging
 #OPTIMIZATION = -Os
@@ -116,8 +116,7 @@ BOARDS = $(AT91LIB)/boards
 UTILITY = $(AT91LIB)/utility
 COMP = $(AT91LIB)/components
 DRIVER = $(AT91LIB)/drivers
-MEM = $(AT91LIB)/memories
-MEM = $(EXT_LIBS)/memories
+USB  = $(AT91LIB)/usb
 
 VPATH += $(UTILITY)
 VPATH += $(PERIPH)/dbgu
@@ -127,25 +126,29 @@ VPATH += $(PERIPH)/ssc
 VPATH += $(PERIPH)/spi
 VPATH += $(PERIPH)/twi
 VPATH += $(PERIPH)/pmc
+VPATH += $(PERIPH)/rstc
 VPATH += $(PERIPH)/cp15
 VPATH += $(BOARDS)/$(BOARD)
 VPATH += $(BOARDS)/$(BOARD)/$(CHIP)
 #VPATH += $(PERIPH)/mci
 VPATH += $(DRIVER)/twi
-#VPATH += $(MEM)/sdmmc
 VPATH += $(PERIPH)/dma
 VPATH += $(DRIVER)/dmad
 VPATH += $(FATFS)/src
-VPATH += $(MEM)
 VPATH += $(AT91LIB)/cmsis
 VPATH += ../src
+
+VPATH += $(USB)/device/core
+VPATH += $(USB)/device/dfu
+VPATH += $(USB)/common/core
+VPATH += $(USB)/common/audio
 
 # Objects built from C source files
 C_OBJECTS += main.o
 C_OBJECTS += stdio.o
 C_OBJECTS += math.o
 C_OBJECTS += dbgu.o
-C_OBJECTS += pio.o
+C_OBJECTS += pio.o pio_it.o
 C_OBJECTS += spi.o
 C_OBJECTS += ssc.o
 C_OBJECTS += twi.o
@@ -154,13 +157,38 @@ C_OBJECTS += twid.o
 C_OBJECTS += board_lowlevel.o
 C_OBJECTS += trace.o
 C_OBJECTS += led.o
+C_OBJECTS += rstc.o
 C_OBJECTS += board_memories.o
+
+C_OBJECTS += USBD_UDPHS.o
+C_OBJECTS += USBDDriver.o
+C_OBJECTS += USBDCallbacks_Initialized.o
+C_OBJECTS += USBDCallbacks_Reset.o
+#C_OBJECTS += USBDCallbacks_Resumed.o
+#C_OBJECTS += USBDCallbacks_Suspended.o
+C_OBJECTS += USBDDriverCb_CfgChanged.o
+#C_OBJECTS += USBDDriverCb_IfSettingChanged.o
+C_OBJECTS += USBInterfaceRequest.o
+C_OBJECTS += USBFeatureRequest.o
+C_OBJECTS += USBGenericRequest.o
+C_OBJECTS += USBGetDescriptorRequest.o
+C_OBJECTS += USBSetAddressRequest.o
+C_OBJECTS += USBSetConfigurationRequest.o
+C_OBJECTS += USBGenericDescriptor.o
+C_OBJECTS += USBConfigurationDescriptor.o
+C_OBJECTS += USBEndpointDescriptor.o
+C_OBJECTS += dfu_runtime.o
+C_OBJECTS += dfu_driver.o
+C_OBJECTS += AUDGenericRequest.o AUDFeatureUnitRequest.o
+
+C_OBJECTS += fast_source_descr.o fast_source.o
 
 C_OBJECTS += logging.o
 C_OBJECTS += tuner_e4k.o
 C_OBJECTS += tuner_e4k_transport.o
 C_OBJECTS += si570.o
 C_OBJECTS += osdr_fpga.o
+C_OBJECTS += req_ctx.o osdr_ssc.o
 
 
 # Objects for different chips
