@@ -35,5 +35,5 @@ void logp2(int subsys, unsigned int level, char *file,
 	va_start(ap, format);
 	vfprintf(stderr, format, ap);
 	va_end(ap);
-	fputc("\r", stderr);
+	fputc('\r', stderr);
 }
