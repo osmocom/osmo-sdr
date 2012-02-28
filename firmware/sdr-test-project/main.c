@@ -277,6 +277,12 @@ static int cmd_ssc_start(struct cmd_state *cs, enum cmd_op op,
 	return 0;
 }
 
+static int cmd_ssc_stats(struct cmd_state *cs, enum cmd_op op,
+			 const char *cmd, const char *arg)
+{
+	ssc_stats();
+}
+
 static struct cmd cmds[] = {
 	{ "tuner.init", CMD_OP_EXEC, cmd_rf_freq,
 	  "Initialize the tuner" },
@@ -290,6 +296,8 @@ static struct cmd cmds[] = {
 	  "Dump FPGA registers" },
 	{ "ssc.start", CMD_OP_EXEC, cmd_ssc_start,
 	  "Start the SSC Receiver" },
+	{ "ssc.stats", CMD_OP_EXEC, cmd_ssc_stats,
+	  "Statistics about the SSC" },
 };
 
 static void handle_input(unsigned char key)
