@@ -181,6 +181,7 @@ int ssc_dma_start(void)
 int ssc_dma_stop(void)
 {
 	SSC_DisableReceiver(AT91C_BASE_SSC0);
+	ssc_state.active = 0;
 
 	/* clear any pending interrupts */
 	DMA_DisableChannel(BOARD_SSC_DMA_CHANNEL);
@@ -227,6 +228,7 @@ void HDMA_IrqHandler(void)
 		/* the end of the list was reached */
 		LED_Clear(0);
 		SSC_DisableReceiver(AT91C_BASE_SSC0);
+		ssc_state.active = 0;
 		TRACE_WARNING("SSC DMA buffer end reached, disabling after %u/%u\n\r",
 				ssc_state.total_irqs, ssc_state.total_xfers);
 	}
@@ -261,4 +263,9 @@ int ssc_init(void)
 void ssc_stats(void)
 {
 	printf("SSC num_irq=%u, num_xfers=%u\n\r", ssc_state.total_irqs, ssc_state.total_xfers);
+}
+
+int ssc_active(void)
+{
+	return ssc_state.active;
 }
