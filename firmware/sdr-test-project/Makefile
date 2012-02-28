@@ -189,6 +189,7 @@ C_OBJECTS += tuner_e4k_transport.o
 C_OBJECTS += si570.o
 C_OBJECTS += osdr_fpga.o
 C_OBJECTS += req_ctx.o osdr_ssc.o
+C_OBJECTS += uart_cmd.o
 
 
 # Objects for different chips

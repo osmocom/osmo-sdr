@@ -27,6 +27,10 @@
  * ----------------------------------------------------------------------------
  */
 
+#include <errno.h>
+#include <string.h>
+#include <stdlib.h>
+
 #include <board.h>
 #include <board_memories.h>
 #include <pio/pio.h>
@@ -40,8 +44,6 @@
 #include <utility/trace.h>
 #include <utility/led.h>
 
-#include <string.h>
-
 #include <dmad/dmad.h>
 #include <dma/dma.h>
 
@@ -49,6 +51,7 @@
 #include <si570.h>
 #include <osdr_fpga.h>
 #include <req_ctx.h>
+#include <uart_cmd.h>
 
 #define SSC_MCK    49152000
 
@@ -195,46 +198,103 @@ static void DisplayMenu(void)
 
 static int freq = 800;
 
+static struct cmd_state cmd_state;
+
+static int cmd_tuner_init(struct cmd_state *cs, enum cmd_op op,
+			  const char *cmd, const char *argv)
+{
+	e4k_init(&e4k);
+	return 0;
+}
+
+static int cmd_rf_freq(struct cmd_state *cs, enum cmd_op op,
+		       const char *cmd, const char *arg)
+{
+	uint32_t freq;
+
+	switch (op) {
+	case CMD_OP_SET:
+		freq = strtoul(arg, NULL, 10);
+		e4k_tune_freq(&e4k, freq);
+		break;
+	case CMD_OP_GET:
+		freq = e4k.vco.flo;
+		uart_cmd_out(cs, "%s:%u\n\r", cmd, freq);
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static int cmd_si570_freq(struct cmd_state *cs, enum cmd_op op,
+			  const char *cmd, const char *arg)
+{
+	uint32_t freq;
+
+	switch (op) {
+	case CMD_OP_SET:
+		freq = strtoul(arg, NULL, 10);
+		set_si570_freq(freq);
+		break;
+	default:
+		return -EINVAL;
+	}
+	return 0;
+}
+
+static int cmd_si570_dump(struct cmd_state *cs, enum cmd_op op,
+			  const char *cmd, const char *arg)
+{
+	si570_regdump(&si570);
+	return 0;
+}
+
+static int cmd_fpga_dump(struct cmd_state *cs, enum cmd_op op,
+			 const char *cmd, const char *arg)
+{
+
+	uart_cmd_out(cs, "FPGA ID REG: 0x%08x\n\r", osdr_fpga_reg_read(OSDR_FPGA_REG_ID));
+	uart_cmd_out(cs, "FPGA ADC: 0x%08x\n\r", osdr_fpga_reg_read(OSDR_FPGA_REG_ADC_VAL));
+	uart_cmd_out(cs, "FPGA PWM1: 0x%08x\n\r", osdr_fpga_reg_read(OSDR_FPGA_REG_PWM1));
+	uart_cmd_out(cs, "FPGA ADC TIMING: 0x%08x\n\r", osdr_fpga_reg_read(OSDR_FPGA_REG_ADC_TIMING));
+
+	return 0;
+}
+
+static int cmd_ssc_start(struct cmd_state *cs, enum cmd_op op,
+			 const char *cmd, const char *arg)
+{
+	switch (op) {
+	case CMD_OP_EXEC:
+		ssc_init();
+		ssc_dma_start();
+		break;
+	default:
+		return -EINVAL;
+	}
+	return 0;
+}
+
+static struct cmd cmds[] = {
+	{ "tuner.init", CMD_OP_EXEC, cmd_rf_freq,
+	  "Initialize the tuner" },
+	{ "tuner.freq", CMD_OP_SET|CMD_OP_GET, cmd_rf_freq,
+	  "Tune to the specified frequency" },
+	{ "si570.freq", CMD_OP_SET|CMD_OP_GET, cmd_si570_freq,
+	  "Change the SI570 clock frequency" },
+	{ "si570.dump", CMD_OP_EXEC, cmd_si570_dump,
+	  "Dump SI570 registers" },
+	{ "fpga.dump", CMD_OP_EXEC, cmd_fpga_dump,
+	  "Dump FPGA registers" },
+	{ "ssc.start", CMD_OP_EXEC, cmd_ssc_start,
+	  "Start the SSC Receiver" },
+};
+
 static void handle_input(unsigned char key)
 {
 	switch (key) {
-	case '0':
-		power_peripherals(1);
-		break;
-	case '1':
-		si570_init(&si570, &twid, SI570_I2C_ADDR);
-		break;
-	case '2':
-		sam3u_e4k_init(&e4k, &twid, E4K_I2C_ADDR);
-		e4k_init(&e4k);
-		break;
-	case 'f':
-		set_si570_freq(30000000);
-		break;
-	case 'r':
-		si570_regdump(&si570);
-		break;
-	case 'q':
-		e4k_tune_freq(&e4k, 100000000);
-		break;
-	case 'w':
-		e4k_tune_freq(&e4k, 101000000);
-		break;
-	case 'p':
-		{
-			uint32_t reg;
-			osdr_fpga_power(1);
-			osdr_fpga_init(SSC_MCK);
-			reg = osdr_fpga_reg_read(OSDR_FPGA_REG_ID);
-			printf("FPGA ID REG: 0x%08x\n\r", reg);
-			osdr_fpga_reg_write(OSDR_FPGA_REG_ADC_TIMING, (1 << 8) | 255);
-		}
-		break;
-	case 'a':
-		printf("FPGA ADC: 0x%08x\n\r", osdr_fpga_reg_read(OSDR_FPGA_REG_ADC_VAL));
-		printf("FPGA PWM1: 0x%08x\n\r", osdr_fpga_reg_read(OSDR_FPGA_REG_PWM1));
-		printf("FPGA ADC TIMING: 0x%08x\n\r", osdr_fpga_reg_read(OSDR_FPGA_REG_ADC_TIMING));
-		break;
 	case '+':
 		freq += 100;
 		osdr_fpga_reg_write(OSDR_FPGA_REG_PWM1, ((freq/2) << 16) | freq);
@@ -242,15 +302,6 @@ static void handle_input(unsigned char key)
 	case '-':
 		freq -= 100;
 		osdr_fpga_reg_write(OSDR_FPGA_REG_PWM1, ((freq/2) << 16) | freq);
-		break;
-	case 's':
-		ssc_init();
-		break;
-	case 'S':
-		ssc_dma_start();
-		break;
-	case 'F':
-		fastsource_start();
 		break;
 	}
 	//osdr_fpga_reg_write(OSDR_FPGA_REG_PWM1, ((freq/2) << 16) | freq);
@@ -306,16 +357,24 @@ int main(void)
     printf("-- %s\n\r", BOARD_NAME);
     printf("-- Compiled: %s %s --\n\r", __DATE__, __TIME__);
 
-    req_ctx_init();
 
-    PIO_InitializeInterrupts(0);
+	req_ctx_init();
+	PIO_InitializeInterrupts(0);
+
+	cmd_state.out = vprintf;
+	uart_cmd_reset(&cmd_state);
+	uart_cmds_register(cmds, sizeof(cmds)/sizeof(cmds[0]));
 
 	fastsource_init();
 	VBus_Configure();
 
 	power_peripherals(1);
+
 	si570_init(&si570, &twid, SI570_I2C_ADDR);
 	set_si570_freq(30000000);
+
+	sam3u_e4k_init(&e4k, &twid, E4K_I2C_ADDR);
+
 	osdr_fpga_init(SSC_MCK);
 	osdr_fpga_reg_write(OSDR_FPGA_REG_ADC_TIMING, (1 << 8) | 255);
 	osdr_fpga_reg_write(OSDR_FPGA_REG_PWM1, (1 << 400) | 800);
@@ -326,16 +385,10 @@ int main(void)
 	if (DBGU_IsRxReady()) {
         	key = DBGU_GetChar();
         	// Process user input
-		handle_input(key);
-
-        	// Display menu
-        	DisplayMenu();
-
-		ssc_stats();
+		if (uart_cmd_char(&cmd_state, key) == 1) {
+			ssc_stats();
+		}
 	}
-
-
-
     }
 }
 
