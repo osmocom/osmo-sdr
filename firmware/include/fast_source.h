@@ -26,6 +26,8 @@
 
 #include <usb/common/core/USBGenericRequest.h>
 
+extern unsigned char fastsource_interfaces[3];
+
 void fastsource_init(void);
 void fastsource_start(void);
 

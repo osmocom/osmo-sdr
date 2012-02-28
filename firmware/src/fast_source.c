@@ -38,7 +38,7 @@
 #include <fast_source.h>
 
 extern const USBDDriverDescriptors auddFastSourceDriverDescriptors;
-static unsigned char driver_interfaces[3];
+unsigned char fastsource_interfaces[3];
 static USBDDriver fast_source_driver;
 
 struct usb_state {
@@ -130,7 +130,7 @@ void fastsource_init(void)
 	INIT_LLIST_HEAD(&usb_state.queue);
 
 	USBDDriver_Initialize(&fast_source_driver, &auddFastSourceDriverDescriptors,
-				driver_interfaces);
+				fastsource_interfaces);
 
 	USBD_Init();
 }
@@ -214,5 +214,3 @@ void USBDDriverCallbacks_InterfaceSettingChanged(unsigned char interface,
 	else
 		LED_Set(USBD_LEDOTHER);
 }
-
-
