@@ -57,15 +57,24 @@ void uart_cmds_register(struct cmd *c, unsigned int num)
 		uart_cmd_register(&c[i]);
 }
 
+#define CMD_MAX_ARGS	10
+
 static int handle_cb(struct cmd_state *cs, int op, char *cmd, char *arg)
 {
 	struct cmd *c;
 	int rc;
+	char *argv[CMD_MAX_ARGS];
+	int argc = 0;
 
-	if (!arg)
-		arg = "";
-
-	//printf("handle_cb(%s, %s)\n", cmd, arg);
+	if (arg) {
+		char *tok;
+		/* tokenize the argument portion into individual arguments */
+		for (tok = strtok(arg, ","); tok; tok = strtok(NULL, ",")) {
+			if (argc >= CMD_MAX_ARGS)
+				break;
+			argv[argc++] = tok;
+		}
+	}
 
 	llist_for_each_entry(c, &cmd_list, list) {
 		if (!strcmp(c->cmd, cmd)) {
@@ -75,7 +84,7 @@ static int handle_cb(struct cmd_state *cs, int op, char *cmd, char *arg)
 				return -EINVAL;
 			}
 
-			rc = c->cb(cs, op, cmd, arg);
+			rc = c->cb(cs, op, cmd, argc, argv);
 			if (rc < 0)
 				uart_cmd_out(cs, "Error executing command\n\r");
 			return rc;
@@ -128,10 +137,10 @@ int uart_cmd_char(struct cmd_state *cs, uint8_t ch)
 			uart_cmd_reset(cs);
 			break;
 		case ' ':
-		case '\n':
 		case '\t':
 			/* ignore any whitespace */
 			break;
+		case '\n':
 		case '\r':
 			/* new line always resets buffer */
 			uart_cmd_reset(cs);
@@ -143,12 +152,12 @@ int uart_cmd_char(struct cmd_state *cs, uint8_t ch)
 		break;
 	case ST_IN_ARG:
 		switch (ch) {
+		case '\n':
 		case '\r':
 			rc = handle_cb(cs, CMD_OP_SET, cs->cmd.buf, cs->arg.buf);
 			uart_cmd_reset(cs);
 			break;
 		case ' ':
-		case '\n':
 		case '\t':
 			/* ignore any whitespace */
 			break;

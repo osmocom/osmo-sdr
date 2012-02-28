@@ -12,15 +12,15 @@ static void my_out(const char *format, va_list ap)
 	vprintf(format, ap);
 }
 
-static int my_cb(struct cmd_state *cs, enum cmd_op op, const char *cmd, const char *arg)
+static int my_cb(struct cmd_state *cs, enum cmd_op op, const char *cmd,
+		 int argc, char **argv)
 {
-	printf("my_%s `%s', `%s'\n", op == CMD_OP_SET ? "set" : "get", cmd, arg);
+	int i;
 
-	if (!strcmp(cmd, "bar") && op == CMD_OP_SET)
-		return -EINVAL;
-
-	else if (!strcmp(cmd, "baz") && op == CMD_OP_GET)
-		return -EINVAL;
+	printf("my_cb(%u,%s,%u,[", op, cmd, argc);
+	for (i = 0; i < argc; i++)
+		printf("%s,", argv[i]);
+	printf("])\n");
 
 	return 0;
 }

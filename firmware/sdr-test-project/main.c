@@ -201,20 +201,22 @@ static int freq = 800;
 static struct cmd_state cmd_state;
 
 static int cmd_tuner_init(struct cmd_state *cs, enum cmd_op op,
-			  const char *cmd, const char *argv)
+			  const char *cmd, int argc, char **argv)
 {
 	e4k_init(&e4k);
 	return 0;
 }
 
 static int cmd_rf_freq(struct cmd_state *cs, enum cmd_op op,
-		       const char *cmd, const char *arg)
+		       const char *cmd, int argc, char **argv)
 {
 	uint32_t freq;
 
 	switch (op) {
 	case CMD_OP_SET:
-		freq = strtoul(arg, NULL, 10);
+		if (argc < 1)
+			return -EINVAL;
+		freq = strtoul(argv[0], NULL, 10);
 		e4k_tune_freq(&e4k, freq);
 		break;
 	case CMD_OP_GET:
@@ -229,13 +231,15 @@ static int cmd_rf_freq(struct cmd_state *cs, enum cmd_op op,
 }
 
 static int cmd_si570_freq(struct cmd_state *cs, enum cmd_op op,
-			  const char *cmd, const char *arg)
+			  const char *cmd, int argc, char **argv)
 {
 	uint32_t freq;
 
 	switch (op) {
 	case CMD_OP_SET:
-		freq = strtoul(arg, NULL, 10);
+		if (argc < 1)
+			return -EINVAL;
+		freq = strtoul(argv[0], NULL, 10);
 		set_si570_freq(freq);
 		break;
 	default:
@@ -245,14 +249,14 @@ static int cmd_si570_freq(struct cmd_state *cs, enum cmd_op op,
 }
 
 static int cmd_si570_dump(struct cmd_state *cs, enum cmd_op op,
-			  const char *cmd, const char *arg)
+			  const char *cmd, int argc, char **argv)
 {
 	si570_regdump(&si570);
 	return 0;
 }
 
 static int cmd_fpga_dump(struct cmd_state *cs, enum cmd_op op,
-			 const char *cmd, const char *arg)
+			 const char *cmd, int argc, char **argv)
 {
 
 	uart_cmd_out(cs, "FPGA ID REG: 0x%08x\n\r", osdr_fpga_reg_read(OSDR_FPGA_REG_ID));
@@ -264,7 +268,7 @@ static int cmd_fpga_dump(struct cmd_state *cs, enum cmd_op op,
 }
 
 static int cmd_ssc_start(struct cmd_state *cs, enum cmd_op op,
-			 const char *cmd, const char *arg)
+			 const char *cmd, int argc, char **argv)
 {
 	switch (op) {
 	case CMD_OP_EXEC:
@@ -278,7 +282,7 @@ static int cmd_ssc_start(struct cmd_state *cs, enum cmd_op op,
 }
 
 static int cmd_ssc_stats(struct cmd_state *cs, enum cmd_op op,
-			 const char *cmd, const char *arg)
+			 const char *cmd, int argc, char **argv)
 {
 	ssc_stats();
 }

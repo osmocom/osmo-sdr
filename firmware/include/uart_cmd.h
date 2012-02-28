@@ -53,7 +53,8 @@ int uart_cmd_reset(struct cmd_state *cs);
 struct cmd {
 	const char *cmd;
 	uint32_t ops;
-	int (*cb)(struct cmd_state *cs, enum cmd_op op, const char *cmd, const char *arg);
+	int (*cb)(struct cmd_state *cs, enum cmd_op op, const char *cmd,
+		  int argc, char **argv);
 	const char *help;
 	/* put list at the end for simpler initialization */
 	struct llist_head list;
