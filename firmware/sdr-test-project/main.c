@@ -52,6 +52,7 @@
 #include <osdr_fpga.h>
 #include <req_ctx.h>
 #include <uart_cmd.h>
+#include <fast_source.h>
 
 #define SSC_MCK    49152000
 
@@ -178,6 +179,7 @@ void USBDCallbacks_Suspended(void)
 {
     USBState = STATE_SUSPEND;
 }
+
 
 static struct cmd_state cmd_state;
 
@@ -369,6 +371,8 @@ int main(void)
 	osdr_fpga_reg_write(OSDR_FPGA_REG_ADC_TIMING, (1 << 8) | 255);
 	osdr_fpga_reg_write(OSDR_FPGA_REG_PWM1, (1 << 400) | 800);
 
+	ssc_init();
+
     // Enter menu loop
     while (1) {
 
@@ -379,6 +383,11 @@ int main(void)
 			ssc_stats();
 		}
 	}
+
+	/* Try to (re-)start the SSC DMA if the IN ISO EP is open but the
+	 * SSC DMA is not active */
+	if (fastsource_interfaces[2] == 1 && !ssc_active())
+		ssc_dma_start();
     }
 }
 
