@@ -207,6 +207,17 @@ static int cmd_tuner_init(struct cmd_state *cs, enum cmd_op op,
 	return 0;
 }
 
+static int cmd_tuner_gain(struct cmd_state *cs, enum cmd_op op,
+			  const char *cmd, int argc, char **argv)
+{
+	int i;
+
+	for (i = 0; i < argc; i++)
+		e4k_if_gain_set(&e4k, i+1, atoi(argv[i]));
+
+	return 0;
+}
+
 static int cmd_rf_freq(struct cmd_state *cs, enum cmd_op op,
 		       const char *cmd, int argc, char **argv)
 {
@@ -288,10 +299,12 @@ static int cmd_ssc_stats(struct cmd_state *cs, enum cmd_op op,
 }
 
 static struct cmd cmds[] = {
-	{ "tuner.init", CMD_OP_EXEC, cmd_rf_freq,
+	{ "tuner.init", CMD_OP_EXEC, cmd_tuner_init,
 	  "Initialize the tuner" },
 	{ "tuner.freq", CMD_OP_SET|CMD_OP_GET, cmd_rf_freq,
 	  "Tune to the specified frequency" },
+	{ "tuner.gain", CMD_OP_SET|CMD_OP_GET, cmd_tuner_gain,
+	  "Tune to the specified gain" },
 	{ "si570.freq", CMD_OP_SET|CMD_OP_GET, cmd_si570_freq,
 	  "Change the SI570 clock frequency" },
 	{ "si570.dump", CMD_OP_EXEC, cmd_si570_dump,
