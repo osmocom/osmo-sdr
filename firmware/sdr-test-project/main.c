@@ -178,25 +178,6 @@ void USBDCallbacks_Suspended(void)
 {
     USBState = STATE_SUSPEND;
 }
-static void DisplayMenu(void)
-{
-	printf("Menu:\r\n"
-		"[0] fpga+rf power on\r\n"
-		"[1] si570 init\r\n"
-		"[2] e4k init\r\n"
-		"[f] si570 30MHz freq\r\n"
-		"[r] si570 regdump\r\n"
-		"[q] 100 MHz\r\n"
-		"[w] 101 MHz\r\n"
-		"[p] FPGA ID reg\r\n"
-		"[a] FPGA ADC reg\r\n"
-		"[s] SSC init\r\n"
-		"[S] SSC single DMA xfer\r\n"
-		"\r\n"
-		);
-}
-
-static int freq = 800;
 
 static struct cmd_state cmd_state;
 
@@ -316,22 +297,6 @@ static struct cmd cmds[] = {
 	{ "ssc.stats", CMD_OP_EXEC, cmd_ssc_stats,
 	  "Statistics about the SSC" },
 };
-
-static void handle_input(unsigned char key)
-{
-	switch (key) {
-	case '+':
-		freq += 100;
-		osdr_fpga_reg_write(OSDR_FPGA_REG_PWM1, ((freq/2) << 16) | freq);
-		break;
-	case '-':
-		freq -= 100;
-		osdr_fpga_reg_write(OSDR_FPGA_REG_PWM1, ((freq/2) << 16) | freq);
-		break;
-	}
-	//osdr_fpga_reg_write(OSDR_FPGA_REG_PWM1, ((freq/2) << 16) | freq);
-	printf("\t\t\tcur_ssc_data = 0x%08x\n\r", AT91C_BASE_SSC0->SSC_RHR);
-}
 
 //------------------------------------------------------------------------------
 /// Main function
