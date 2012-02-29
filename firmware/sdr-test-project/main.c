@@ -288,7 +288,7 @@ static struct cmd cmds[] = {
 	  "Initialize the tuner" },
 	{ "tuner.freq", CMD_OP_SET|CMD_OP_GET, cmd_rf_freq,
 	  "Tune to the specified frequency" },
-	{ "tuner.gain", CMD_OP_SET|CMD_OP_GET, cmd_tuner_gain,
+	{ "tuner.gain", CMD_OP_SET, cmd_tuner_gain,
 	  "Tune to the specified gain" },
 	{ "tuner.flt_bw_mix", CMD_OP_SET|CMD_OP_GET, cmd_flt_bw,
 	  "Filter bandwidth (Mixer)" },
