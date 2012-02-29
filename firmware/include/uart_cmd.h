@@ -36,7 +36,7 @@ enum pstate {
 
 struct strbuf {
 	uint8_t idx;
-	char buf[16];
+	char buf[32];
 };
 
 struct cmd_state {
