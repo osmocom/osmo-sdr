@@ -152,8 +152,10 @@ int uart_cmd_char(struct cmd_state *cs, uint8_t ch)
 		break;
 	case ST_IN_ARG:
 		switch (ch) {
-		case '\n':
 		case '\r':
+			uart_cmd_out(cs, "\n");
+			/* fall through */
+		case '\n':
 			rc = handle_cb(cs, CMD_OP_SET, cs->cmd.buf, cs->arg.buf);
 			uart_cmd_reset(cs);
 			break;
