@@ -734,4 +734,17 @@ int e4k_init(struct e4k_state *e4k)
 	/* Clear the reset-detect register */
 	e4k_reg_set_mask(e4k, E4K_REG_MASTER1, E4K_MASTER1_POR_DET, E4K_MASTER1_POR_DET);
 
+	/* Set the most narrow filter we can possibly use */
+	e4k_if_filter_bw_set(e4k, E4K_IF_FILTER_MIX, KHZ(1900));
+	e4k_if_filter_bw_set(e4k, E4K_IF_FILTER_RC, KHZ(1000));
+	e4k_if_filter_bw_set(e4k, E4K_IF_FILTER_CHAN, KHZ(2150));
+#if 0
+	/* Select moderate gain levels */
+	e4k_if_gain_set(e4k, 1, 6);
+	e4k_if_gain_set(e4k, 2, 3);
+	e4k_if_gain_set(e4k, 3, 3);
+	e4k_if_gain_set(e4k, 4, 1);
+	e4k_if_gain_set(e4k, 5, 9);
+	e4k_if_gain_set(e4k, 6, 9);
+#endif
 }
