@@ -18,9 +18,15 @@
  */
 
 #include <stdint.h>
+#include <stdlib.h>
+#include <errno.h>
 
 #include <pio/pio.h>
 #include <spi/spi.h>
+
+#include <common.h>
+#include <reg_field.h>
+#include <osdr_fpga.h>
 
 #define BOARD_OSDR_SPI			AT91C_BASE_SPI0
 #define BOARD_OSDR_FPGA_SPI_NPCS	0
@@ -35,23 +41,6 @@
 
 static const Pin fon_pin = PIN_FON;
 static AT91S_SPI *spi = BOARD_OSDR_SPI;
-
-void osdr_fpga_power(int on)
-{
-	if (on)
-		PIO_Set(&fon_pin);
-	else
-		PIO_Clear(&fon_pin);
-}
-
-void osdr_fpga_init(uint32_t masterClock)
-{
-	SPI_Configure(BOARD_OSDR_SPI, AT91C_ID_SPI0,
-			AT91C_SPI_MSTR | AT91C_SPI_PS_FIXED);
-	SPI_ConfigureNPCS(BOARD_OSDR_SPI, 0,
-			  OSDR_FPGA_NPCSCONFIG(masterClock));
-	SPI_Enable(BOARD_OSDR_SPI);
-}
 
 static void write_byte(uint8_t byte)
 {
@@ -107,4 +96,127 @@ void osdr_fpga_reg_write(uint8_t reg, uint32_t val)
 	/* make sure to flush any received characters */
 	while (spi->SPI_SR & AT91C_SPI_RDRF)
 		SPI_Read(BOARD_OSDR_SPI);
+}
+
+void osdr_fpga_power(int on)
+{
+	if (on)
+		PIO_Set(&fon_pin);
+	else
+		PIO_Clear(&fon_pin);
+}
+
+
+/***********************************************************************
+ * command integration
+ ***********************************************************************/
+
+static int cmd_fpga_dump(struct cmd_state *cs, enum cmd_op op,
+			 const char *cmd, int argc, char **argv)
+{
+
+	uart_cmd_out(cs, "FPGA ID REG: 0x%08x\n\r", osdr_fpga_reg_read(OSDR_FPGA_REG_ID));
+	uart_cmd_out(cs, "FPGA ADC: 0x%08x\n\r", osdr_fpga_reg_read(OSDR_FPGA_REG_ADC_VAL));
+	uart_cmd_out(cs, "FPGA PWM1: 0x%08x\n\r", osdr_fpga_reg_read(OSDR_FPGA_REG_PWM1));
+	uart_cmd_out(cs, "FPGA ADC TIMING: 0x%08x\n\r", osdr_fpga_reg_read(OSDR_FPGA_REG_ADC_TIMING));
+
+	return 0;
+}
+
+static int cmd_fpga_clkdiv(struct cmd_state *cs, enum cmd_op op,
+			   const char *cmd, int argc, char **argv)
+{
+	uint32_t tmp;
+
+	if (argc < 1)
+		return -EINVAL;
+
+	tmp = osdr_fpga_reg_read(OSDR_FPGA_REG_ADC_TIMING);
+	osdr_fpga_reg_write(OSDR_FPGA_REG_ADC_TIMING,
+			    (tmp & 0xFFFF0000) | atoi(argv[0]));
+
+	return 0;
+}
+
+enum fpga_field {
+	PWM1_DIV, PWM1_DUTY,
+	PWM2_DIV, PWM2_DUTY,
+	ADC_CLKDIV, ADC_DUTY,
+};
+
+const struct reg_field fpga_fields[] = {
+	[PWM1_DIV] = { OSDR_FPGA_REG_PWM1, 0, 16 },
+	[PWM1_DUTY] = { OSDR_FPGA_REG_PWM1, 16, 16 },
+	[PWM2_DIV] = { OSDR_FPGA_REG_PWM2, 0, 16 },
+	[PWM2_DUTY] = { OSDR_FPGA_REG_PWM2, 16, 16 },
+	[ADC_CLKDIV] = { OSDR_FPGA_REG_ADC_TIMING, 0, 8 },
+	[ADC_DUTY] = { OSDR_FPGA_REG_ADC_TIMING, 8, 8},
+};
+
+const char *field_names[] = {
+	[PWM1_DIV] = 	"fpga.pwm1_div",
+	[PWM1_DUTY] =	"fpga.pwm1_duty",
+      	[PWM2_DIV] =	"fpga.pwm2_div",
+	[PWM2_DUTY] =	"fpga.pwm2_duty",
+	[ADC_CLKDIV] =	"fpga.adc_clkdiv",
+	[ADC_DUTY] =	"fpga.adc_acqlen",
+};
+
+static int fpga_f_write(void *data, uint32_t reg, uint32_t val)
+{
+	osdr_fpga_reg_write(reg, val);
+	return 0;
+}
+
+static uint32_t fpga_f_read(void *data, uint32_t reg)
+{
+	return osdr_fpga_reg_read(reg);
+}
+
+static const struct reg_field_ops fpga_fops = {
+	.fields		= fpga_fields,
+	.field_names	= field_names,
+	.num_fields	= ARRAY_SIZE(fpga_fields),
+	.data		= NULL,
+	.write_cb	= fpga_f_write,
+	.read_cb	= fpga_f_read,
+};
+
+static int cmd_fpga_field(struct cmd_state *cs, enum cmd_op op,
+			  const char *cmd, int argc, char **argv)
+{
+	return reg_field_cmd(cs, op, cmd, argc, argv, &fpga_fops);
+}
+
+static struct cmd cmds[] = {
+	{ "fpga.dump", CMD_OP_EXEC, cmd_fpga_dump,
+	  "Dump FPGA registers" },
+	{ "fpga.pwm1_div", CMD_OP_SET|CMD_OP_GET, cmd_fpga_field,
+	  "PWM divider, Freq = 80MHz/(div+1)" },
+	{ "fpga.pwm1_duty", CMD_OP_SET|CMD_OP_GET, cmd_fpga_field,
+	  "PWM duty cycle" },
+	{ "fpga.pwm2_div", CMD_OP_SET|CMD_OP_GET, cmd_fpga_field,
+	  "PWM divider, Freq = 80MHz/(div+1)" },
+	{ "fpga.pwm2_duty", CMD_OP_SET|CMD_OP_GET, cmd_fpga_field,
+	  "PWM duty cycle" },
+	{ "fpga.adc_clkdiv", CMD_OP_SET|CMD_OP_GET, cmd_fpga_field,
+	  "FPGA Clock Divider for ADC (80 MHz/CLKDIV)" },
+	{ "fpga.adc_acqlen", CMD_OP_SET|CMD_OP_GET, cmd_fpga_field,
+	  "Num of SCK cycles nCS to AD7357 is held high betewen conversions" },
+};
+
+
+/***********************************************************************
+ * global init function
+ ***********************************************************************/
+
+void osdr_fpga_init(uint32_t masterClock)
+{
+	SPI_Configure(BOARD_OSDR_SPI, AT91C_ID_SPI0,
+			AT91C_SPI_MSTR | AT91C_SPI_PS_FIXED);
+	SPI_ConfigureNPCS(BOARD_OSDR_SPI, 0,
+			  OSDR_FPGA_NPCSCONFIG(masterClock));
+	SPI_Enable(BOARD_OSDR_SPI);
+
+	uart_cmds_register(cmds, ARRAY_SIZE(cmds));
 }

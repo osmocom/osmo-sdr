@@ -190,6 +190,7 @@ C_OBJECTS += si570.o
 C_OBJECTS += osdr_fpga.o
 C_OBJECTS += req_ctx.o osdr_ssc.o
 C_OBJECTS += uart_cmd.o
+C_OBJECTS += reg_field.o
 
 
 # Objects for different chips

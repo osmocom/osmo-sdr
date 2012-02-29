@@ -24,6 +24,7 @@
 
 #include <common.h>
 #include <logging.h>
+#include <reg_field.h>
 
 #include <tuner_e4k.h>
 
@@ -42,14 +43,6 @@ uint32_t unsigned_delta(uint32_t a, uint32_t b)
 static const uint8_t width2mask[] = {
 	0, 1, 3, 7, 0xf, 0x1f, 0x3f, 0x7f, 0xff
 };
-
-/* structure describing a field in a register */
-struct reg_field {
-	uint8_t reg;
-	uint8_t shift;
-	uint8_t width;
-};
-
 
 /*********************************************************************** 
  * Register Access */

@@ -249,18 +249,6 @@ static int cmd_si570_dump(struct cmd_state *cs, enum cmd_op op,
 	return 0;
 }
 
-static int cmd_fpga_dump(struct cmd_state *cs, enum cmd_op op,
-			 const char *cmd, int argc, char **argv)
-{
-
-	uart_cmd_out(cs, "FPGA ID REG: 0x%08x\n\r", osdr_fpga_reg_read(OSDR_FPGA_REG_ID));
-	uart_cmd_out(cs, "FPGA ADC: 0x%08x\n\r", osdr_fpga_reg_read(OSDR_FPGA_REG_ADC_VAL));
-	uart_cmd_out(cs, "FPGA PWM1: 0x%08x\n\r", osdr_fpga_reg_read(OSDR_FPGA_REG_PWM1));
-	uart_cmd_out(cs, "FPGA ADC TIMING: 0x%08x\n\r", osdr_fpga_reg_read(OSDR_FPGA_REG_ADC_TIMING));
-
-	return 0;
-}
-
 static int cmd_ssc_start(struct cmd_state *cs, enum cmd_op op,
 			 const char *cmd, int argc, char **argv)
 {
@@ -288,12 +276,12 @@ static struct cmd cmds[] = {
 	  "Tune to the specified frequency" },
 	{ "tuner.gain", CMD_OP_SET|CMD_OP_GET, cmd_tuner_gain,
 	  "Tune to the specified gain" },
+
 	{ "si570.freq", CMD_OP_SET|CMD_OP_GET, cmd_si570_freq,
 	  "Change the SI570 clock frequency" },
 	{ "si570.dump", CMD_OP_EXEC, cmd_si570_dump,
 	  "Dump SI570 registers" },
-	{ "fpga.dump", CMD_OP_EXEC, cmd_fpga_dump,
-	  "Dump FPGA registers" },
+
 	{ "ssc.start", CMD_OP_EXEC, cmd_ssc_start,
 	  "Start the SSC Receiver" },
 	{ "ssc.stats", CMD_OP_EXEC, cmd_ssc_stats,
