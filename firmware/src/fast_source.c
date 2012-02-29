@@ -33,6 +33,8 @@
 #include <usb/device/core/USBDCallbacks.h>
 #include <usb/common/audio/AUDGenericRequest.h>
 #include <usb/common/audio/AUDFeatureUnitRequest.h>
+#include <usb/common/audio/AUDFeatureUnitDescriptor.h>
+
 
 #include <fast_source_descr.h>
 #include <fast_source.h>
@@ -44,6 +46,7 @@ static USBDDriver fast_source_driver;
 struct usb_state {
 	struct llist_head queue;
 	int active;
+	uint8_t muted;
 };
 static struct usb_state usb_state;
 
@@ -52,15 +55,21 @@ static struct usb_state usb_state;
 static void fastsource_get_feat_cur_val(uint8_t entity, uint8_t channel,
 				   uint8_t control, uint8_t length)
 {
-	/* FIXME */
-	USBD_Stall(0);
+	TRACE_INFO("get_feat(E%u, CN%u, CS%u, L%u) ", entity, channel, control, length);
+	if (channel == 0 && control == AUDFeatureUnitDescriptor_MUTE && length == 1)
+		USBD_Write(0, &usb_state.muted, sizeof(usb_state.muted), 0, 0);
+	else
+		USBD_Stall(0);
 }
 
 static void fastsource_set_feat_cur_val(uint8_t entity, uint8_t channel,
 				   uint8_t control, uint8_t length)
 {
-	/* FIXME */
-	USBD_Stall(0);
+	TRACE_INFO("set_feat(E%u, CO%u, CH%u, L%u) ", entity, channel, control, length);
+	if (channel == 0 && control == AUDFeatureUnitDescriptor_MUTE && length == 1)
+		USBD_Read(0, &usb_state.muted, sizeof(usb_state.muted), 0, 0);
+	else
+		USBD_Stall(0);
 }
 
 /* handler for EP0 (control) requests */
@@ -208,6 +217,7 @@ void USBDCallbacks_RequestReceived(const USBGenericRequest *request)
 void USBDDriverCallbacks_InterfaceSettingChanged(unsigned char interface,
 						 unsigned char setting)
 {
+	printf("USB_IF_CHANGED(%u, %u)\n\r", interface, setting);
 	if ((interface == AUDDLoopRecDriverDescriptors_STREAMING)
 	    && (setting == 0))
 		LED_Clear(USBD_LEDOTHER);
