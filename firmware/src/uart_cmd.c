@@ -107,7 +107,7 @@ static void print_list(struct cmd_state *cs)
 		if (c->help)
 			help = c->help;
 
-		uart_cmd_out(cs, "%s %s\n\r", c->cmd, c->help);
+		uart_cmd_out(cs, "%s  --  %s\n\r", c->cmd, c->help);
 	}
 }
 
@@ -187,6 +187,8 @@ int uart_cmd_reset(struct cmd_state *cs)
 	strbuf_reset(&cs->cmd);
 	strbuf_reset(&cs->arg);
 	cs->state = ST_IN_CMD;
+
+	uart_cmd_out(cs, "\r\n > ");
 
 	return 0;
 }

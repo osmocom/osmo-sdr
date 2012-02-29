@@ -249,6 +249,40 @@ static int cmd_si570_dump(struct cmd_state *cs, enum cmd_op op,
 	return 0;
 }
 
+static int cmd_flt_bw(struct cmd_state *cs, enum cmd_op op,
+		      const char *cmd, int argc, char **argv)
+{
+	enum e4k_if_filter filt;
+	int bw, rc;
+
+	if (!strcmp(cmd, "tuner.flt_bw_mix"))
+		filt = E4K_IF_FILTER_MIX;
+	else if (!strcmp(cmd, "tuner.flt_bw_chan"))
+		filt = E4K_IF_FILTER_CHAN;
+	else if (!strcmp(cmd, "tuner.flt_bw_rc"))
+		filt = E4K_IF_FILTER_RC;
+	else
+		return -EINVAL;
+
+	switch (op) {
+	case CMD_OP_GET:
+		bw = e4k_if_filter_bw_get(&e4k, filt);
+		uart_cmd_out(cs, "%s:%d\n\r", cmd, bw);
+		break;
+	case CMD_OP_SET:
+		if (argc < 1)
+			return -EINVAL;
+		rc = e4k_if_filter_bw_set(&e4k, filt, atoi(argv[0]));
+		if (rc < 0)
+			return -EINVAL;
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
 static struct cmd cmds[] = {
 	{ "tuner.init", CMD_OP_EXEC, cmd_tuner_init,
 	  "Initialize the tuner" },
@@ -256,6 +290,12 @@ static struct cmd cmds[] = {
 	  "Tune to the specified frequency" },
 	{ "tuner.gain", CMD_OP_SET|CMD_OP_GET, cmd_tuner_gain,
 	  "Tune to the specified gain" },
+	{ "tuner.flt_bw_mix", CMD_OP_SET|CMD_OP_GET, cmd_flt_bw,
+	  "Filter bandwidth (Mixer)" },
+	{ "tuner.flt_bw_chan", CMD_OP_SET|CMD_OP_GET, cmd_flt_bw,
+	  "Filter bandwidth (Channel)" },
+	{ "tuner.flt_bw_rc", CMD_OP_SET|CMD_OP_GET, cmd_flt_bw,
+	  "Filter bandwidth (RC)" },
 
 	{ "si570.freq", CMD_OP_SET|CMD_OP_GET, cmd_si570_freq,
 	  "Change the SI570 clock frequency" },
@@ -344,7 +384,7 @@ int main(void)
         	key = DBGU_GetChar();
         	// Process user input
 		if (uart_cmd_char(&cmd_state, key) == 1) {
-			ssc_stats();
+			//ssc_stats();
 		}
 	}
 
