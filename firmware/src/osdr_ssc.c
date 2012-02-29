@@ -31,7 +31,9 @@
 //#include <dmad/dmad.h>
 #include <dma/dma.h>
 
+#include <common.h>
 #include <req_ctx.h>
+#include <uart_cmd.h>
 
 struct reg {
 	unsigned int offset;
@@ -43,7 +45,7 @@ void reg_dump(struct reg *regs, uint32_t *base)
 	struct reg *r;
 	for (r = regs; r->offset || r->name; r++) {
 		uint32_t *addr = (uint32_t *) ((uint8_t *)base + r->offset);
-		TRACE_INFO("%s\t%08x:\t%08x\n\r", r->name, addr, *addr);
+		printf("%s\t%08x:\t%08x\n\r", r->name, addr, *addr);
 	}
 }
 
@@ -166,8 +168,6 @@ int ssc_dma_start(void)
 				| AT91C_HDMA_SOD_DISABLE \
 				| AT91C_HDMA_FIFOCFG_LARGESTBURST);
 
-	dma_dump_regs();
-
 	ssc_state.active = 1;
 	DMA_EnableChannel(BOARD_SSC_DMA_CHANNEL);
 	LED_Set(0);
@@ -234,6 +234,53 @@ void HDMA_IrqHandler(void)
 	}
 }
 
+void ssc_stats(void)
+{
+	printf("SSC num_irq=%u, num_xfers=%u\n\r", ssc_state.total_irqs, ssc_state.total_xfers);
+}
+
+int ssc_active(void)
+{
+	return ssc_state.active;
+}
+
+
+static int cmd_ssc_start(struct cmd_state *cs, enum cmd_op op,
+			 const char *cmd, int argc, char **argv)
+{
+	ssc_init();
+	ssc_dma_start();
+	return 0;
+}
+static int cmd_ssc_stop(struct cmd_state *cs, enum cmd_op op,
+			 const char *cmd, int argc, char **argv)
+{
+	ssc_dma_stop();
+	return 0;
+}
+static int cmd_ssc_stats(struct cmd_state *cs, enum cmd_op op,
+			 const char *cmd, int argc, char **argv)
+{
+	ssc_stats();
+	return 0;
+}
+static int cmd_ssc_dump(struct cmd_state *cs, enum cmd_op op,
+			const char *cmd, int argc, char **argv)
+{
+	dma_dump_regs();
+}
+
+static struct cmd cmds[] = {
+	{ "ssc.start", CMD_OP_EXEC, cmd_ssc_start,
+	  "Start the SSC Receiver" },
+	{ "ssc.stop", CMD_OP_EXEC, cmd_ssc_stop,
+	  "Start the SSC Receiver" },
+	{ "ssc.stats", CMD_OP_EXEC, cmd_ssc_stats,
+	  "Statistics about the SSC" },
+	{ "ssc.dump", CMD_OP_EXEC, cmd_ssc_dump,
+	  "Dump SSC DMA registers" },
+};
+
 int ssc_init(void)
 {
 	memset(&ssc_state, 0, sizeof(ssc_state));
@@ -257,15 +304,9 @@ int ssc_init(void)
 	TRACE_INFO("SSC initialized\n\r");
 	LED_Clear(0);
 
+	uart_cmds_register(cmds, ARRAY_SIZE(cmds));
+
 	return 0;
 }
 
-void ssc_stats(void)
-{
-	printf("SSC num_irq=%u, num_xfers=%u\n\r", ssc_state.total_irqs, ssc_state.total_xfers);
-}
 
-int ssc_active(void)
-{
-	return ssc_state.active;
-}
