@@ -59,10 +59,12 @@ int reg_field_cmd(struct cmd_state *cs, enum cmd_op op,
 				return -EINVAL;
 
 			reg_field_write(ops, &ops->fields[i], atoi(argv[0]));
+			return 0;
 			break;
 		case CMD_OP_GET:
 			tmp = reg_field_read(ops, &ops->fields[i]);
 			uart_cmd_out(cs, "%s:%u\n\r", cmd, tmp);
+			return 0;
 			break;
 		default:
 			return -EINVAL;
