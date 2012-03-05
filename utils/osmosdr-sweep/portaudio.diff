@@ -1,0 +1,12 @@
+diff -ur portaudio/src/common/pa_front.c portaudio-osmosdr/src/common/pa_front.c
+--- portaudio/src/common/pa_front.c	2011-08-18 05:43:51.000000000 +0200
++++ portaudio-osmosdr/src/common/pa_front.c	2012-02-29 18:29:40.100609445 +0100
+@@ -965,7 +965,7 @@
+     
+     
+     /* Check for absurd sample rates. */
+-    if( (sampleRate < 1000.0) || (sampleRate > 200000.0) )
++    if( (sampleRate < 1000.0) || (sampleRate > 1500000.0) )
+         return paInvalidSampleRate;
+ 
+     if( ((streamFlags & ~paPlatformSpecificFlags) & ~(paClipOff | paDitherOff | paNeverDropInput | paPrimeOutputBuffersUsingStreamCallback ) ) != 0 )
