@@ -28,6 +28,10 @@
 
 #include <tuner_e4k.h>
 
+/* If this is defined, the limits are somewhat relaxed compared to what the
+ * vendor claims is possible */
+#define OUT_OF_SPEC
+
 #define MHZ(x)	((x)*1000*1000)
 #define KHZ(x)	((x)*1000)
 
@@ -323,6 +327,14 @@ int e4k_if_filter_bw_get(struct e4k_state *e4k, enum e4k_if_filter filter)
 #define E4K_FVCO_MAX_KHZ	3600000	/* 3.6 GHz */
 #define E4K_PLL_Y		65535
 
+#ifdef OUT_OF_SPEC
+#define E4K_FLO_MIN_MHZ		50
+#define E4K_FLO_MAX_MHZ		1900
+#else
+#define E4K_FLO_MIN_MHZ		64
+#define E4K_FLO_MAX_MHZ		1700
+#endif
+
 /* \brief table of R dividers in case 3phase mixing is enabled,
  * the values have to be halved if it's 2phase */
 static const uint8_t vco_r_table_3ph[] = {
@@ -353,7 +365,7 @@ static int is_fosc_valid(uint32_t fosc)
 
 static int is_flo_valid(uint32_t flo)
 {
-	if (flo < MHZ(64) || flo > MHZ(1700)) {
+	if (flo < MHZ(E4K_FLO_MIN_MHZ) || flo > MHZ(E4K_FLO_MAX_MHZ)) {
 		LOGP(DTUN, LOGL_ERROR, "Flo %u invalid\n", flo);
 		return 0;
 	}
