@@ -283,6 +283,18 @@ static int cmd_flt_bw(struct cmd_state *cs, enum cmd_op op,
 	return 0;
 }
 
+static int cmd_tuner_dco(struct cmd_state *cs, enum cmd_op op,
+			 const char *cmd, int argc, char **argv)
+{
+	return e4k_dc_offset_calibrate(&e4k);
+}
+
+static int cmd_tuner_dco_table(struct cmd_state *cs, enum cmd_op op,
+			 const char *cmd, int argc, char **argv)
+{
+	return e4k_dc_offset_gen_table(&e4k);
+}
+
 static struct cmd cmds[] = {
 	{ "tuner.init", CMD_OP_EXEC, cmd_tuner_init,
 	  "Initialize the tuner" },
@@ -296,6 +308,10 @@ static struct cmd cmds[] = {
 	  "Filter bandwidth (Channel)" },
 	{ "tuner.flt_bw_rc", CMD_OP_SET|CMD_OP_GET, cmd_flt_bw,
 	  "Filter bandwidth (RC)" },
+	{ "tuner.dc_calib", CMD_OP_EXEC, cmd_tuner_dco,
+	  "Perform DC offset calibration" },
+	{ "tuner.dc_table", CMD_OP_EXEC, cmd_tuner_dco_table,
+	  "Generate DC offset table" },
 
 	{ "si570.freq", CMD_OP_SET|CMD_OP_GET, cmd_si570_freq,
 	  "Change the SI570 clock frequency" },
