@@ -205,4 +205,7 @@ int sam3u_e4k_init(struct e4k_state *e4k, void *i2c, uint8_t slave_addr);
 void sam3u_e4k_power(struct e4k_state *e4k, int on);
 void sam3u_e4k_stby(struct e4k_state *e4k, int on);
 
+int e4k_dc_offset_calibrate(struct e4k_state *e4k);
+int e4k_dc_offset_gen_table(struct e4k_state *e4k);
+
 #endif /* _E4K_TUNER_H */

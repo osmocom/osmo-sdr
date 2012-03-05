@@ -684,6 +684,79 @@ int e4k_if_gain_set(struct e4k_state *e4k, uint8_t stage, int8_t value)
 	return e4k_reg_set_mask(e4k, field->reg, mask, rc << field->shift);
 }
 
+/*********************************************************************** 
+ * DC Offset */
+
+/*! \brief Perform a DC offset calibration right now
+ *  \param[e4k] handle to the tuner chip
+ */
+int e4k_dc_offset_calibrate(struct e4k_state *e4k)
+{
+	/* make sure the DC range detector is enabled */
+	e4k_reg_set_mask(e4k, E4K_REG_DC5, E4K_DC5_RANGE_DET_EN, E4K_DC5_RANGE_DET_EN);
+
+	return e4k_reg_write(e4k, E4K_REG_DC1, 0x01);
+}
+
+
+static const int8_t if_gains_max[] = {
+	0, 6, 9, 9, 2, 15, 15
+};
+
+struct gain_comb {
+	int8_t mixer_gain;
+	uint8_t if1_gain;
+	uint8_t reg;
+};
+
+static const struct gain_comb dc_gain_comb[] = {
+	{ 0, -3, 0x50 },
+	{ 0, 6, 0x51 },
+	{ 12, -3, 0x52 },
+	{ 12, 6, 0x53 },
+};
+
+#define TO_LUT(offset, range)	(offset | (range << 6))
+
+int e4k_dc_offset_gen_table(struct e4k_state *e4k)
+{
+	int i;
+
+	/* FIXME: read ont current gain values and write them back
+	 * before returning to the caller */
+
+	/* set all 'other' gains to maximum */
+	for (i = 2; i <= 6; i++)
+		e4k_if_gain_set(e4k, i, if_gains_max[i]);
+
+	/* iterate over all mixer + if_stage_1 gain combinations */
+	for (i = 0; i < ARRAY_SIZE(dc_gain_comb); i++) {
+		uint8_t offs_i, offs_q, range_i, range_q;
+
+		/* set the combination of mixer / if1 gain */
+		e3k_mixer_gain_set(e4k, dc_gain_comb[i].mixer_gain);
+		e4k_if_gain_set(e4k, 1, dc_gain_comb[i].if1_gain);
+
+		/* perform actual calibration */
+		e4k_dc_offset_calibrate(e4k);
+		/* FIXME: do we have to wait? */
+
+		/* extract I/Q offset and range values */
+		offs_i = e4k_reg_read(e4k, E4K_REG_DC2) & 0x3F;
+		offs_q = e4k_reg_read(e4k, E4K_REG_DC3) & 0x3F;
+		range_i = e4k_reg_read(e4k, E4K_REG_DC4) & 0x3;
+		range_q = (e4k_reg_read(e4k, E4K_REG_DC4) >> 4) & 0x3;
+
+		/* write into the table */
+		e4k_reg_write(e4k, dc_gain_comb[i].reg,
+			      TO_LUT(offs_q, range_q));
+		e4k_reg_write(e4k, dc_gain_comb[i].reg+0x10,
+			      TO_LUT(offs_i, range_i));
+	}
+
+	return 0;
+}
+
 
 /*********************************************************************** 
  * Initialization */
@@ -697,6 +770,8 @@ static int magic_init(struct e4k_state *e4k)
 	e4k_reg_write(e4k, 0x88, 0x01);
 	e4k_reg_write(e4k, 0x9f, 0x7f);
 	e4k_reg_write(e4k, 0xa0, 0x07);
+
+	return 0;
 }
 
 /*! \brief Initialize the E4K tuner
