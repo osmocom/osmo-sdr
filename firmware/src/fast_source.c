@@ -218,7 +218,7 @@ void USBDDriverCallbacks_InterfaceSettingChanged(unsigned char interface,
 						 unsigned char setting)
 {
 	printf("USB_IF_CHANGED(%u, %u)\n\r", interface, setting);
-	if ((interface == AUDDLoopRecDriverDescriptors_STREAMING)
+	if ((interface == AUDDLoopRecDriverDescriptors_STREAMINGIN)
 	    && (setting == 0))
 		LED_Clear(USBD_LEDOTHER);
 	else
