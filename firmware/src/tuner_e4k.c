@@ -684,6 +684,24 @@ int e4k_if_gain_set(struct e4k_state *e4k, uint8_t stage, int8_t value)
 	return e4k_reg_set_mask(e4k, field->reg, mask, rc << field->shift);
 }
 
+int e4k_mixer_gain_set(struct e4k_state *e4k, int8_t value)
+{
+	uint8_t bit;
+
+	switch (value) {
+	case 0:
+		bit = 0;
+		break;
+	case 12:
+		bit = 1;
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	return e4k_reg_set_mask(e4k, E4K_REG_GAIN2, 1, bit);
+}
+
 /*********************************************************************** 
  * DC Offset */
 
@@ -734,7 +752,7 @@ int e4k_dc_offset_gen_table(struct e4k_state *e4k)
 		uint8_t offs_i, offs_q, range_i, range_q;
 
 		/* set the combination of mixer / if1 gain */
-		e3k_mixer_gain_set(e4k, dc_gain_comb[i].mixer_gain);
+		e4k_mixer_gain_set(e4k, dc_gain_comb[i].mixer_gain);
 		e4k_if_gain_set(e4k, 1, dc_gain_comb[i].if1_gain);
 
 		/* perform actual calibration */
@@ -747,6 +765,8 @@ int e4k_dc_offset_gen_table(struct e4k_state *e4k)
 		range_i = e4k_reg_read(e4k, E4K_REG_DC4) & 0x3;
 		range_q = (e4k_reg_read(e4k, E4K_REG_DC4) >> 4) & 0x3;
 
+		LOGP(DTUN, LOGL_DEBUG, "Table %u I=%u/%u, Q=%u/%u\n",
+			i, range_i, offs_i, range_q, offs_q);
 		/* write into the table */
 		e4k_reg_write(e4k, dc_gain_comb[i].reg,
 			      TO_LUT(offs_q, range_q));
