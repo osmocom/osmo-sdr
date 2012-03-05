@@ -188,6 +188,28 @@ static int cmd_fpga_field(struct cmd_state *cs, enum cmd_op op,
 	return reg_field_cmd(cs, op, cmd, argc, argv, &fpga_fops);
 }
 
+static int cmd_fpga_test(struct cmd_state *cs, enum cmd_op op,
+			 const char *cmd, int argc, char **argv)
+{
+	uint32_t on;
+
+	/* in the test mode, the FPGA will not send samples but an incrementing
+	 * and decrementing counter to detect lost samples. */
+	switch (op) {
+	case CMD_OP_SET:
+		if (atoi(argv[0]) == 0)
+			on = 0;
+		else
+			on = 1;
+		osdr_fpga_reg_write(4, on);
+		break;
+	case CMD_OP_GET:
+		printf("FPGA Test mode is %u\n\r", osdr_fpga_reg_read(4));
+		break;
+	}
+	return 0;
+}
+
 static struct cmd cmds[] = {
 	{ "fpga.dump", CMD_OP_EXEC, cmd_fpga_dump,
 	  "Dump FPGA registers" },
@@ -203,6 +225,8 @@ static struct cmd cmds[] = {
 	  "FPGA Clock Divider for ADC (80 MHz/CLKDIV)" },
 	{ "fpga.adc_acqlen", CMD_OP_SET|CMD_OP_GET, cmd_fpga_field,
 	  "Num of SCK cycles nCS to AD7357 is held high betewen conversions" },
+	{ "fpga.test_mode", CMD_OP_SET|CMD_OP_GET, cmd_fpga_test,
+	  "Enable/disable test mode" },
 };
 
 
