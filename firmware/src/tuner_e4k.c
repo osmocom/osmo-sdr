@@ -727,6 +727,31 @@ int e4k_commonmode_set(struct e4k_state *e4k, int8_t value)
 /*********************************************************************** 
  * DC Offset */
 
+int e4k_manual_dc_offset(struct e4k_state *e4k, int8_t iofs, int8_t irange, int8_t qofs, int8_t qrange)
+{
+	int res;
+
+	if((iofs < 0x00) || (iofs > 0x3f))
+		return -EINVAL;
+	if((irange < 0x00) || (irange > 0x03))
+		return -EINVAL;
+	if((qofs < 0x00) || (qofs > 0x3f))
+		return -EINVAL;
+	if((qrange < 0x00) || (qrange > 0x03))
+		return -EINVAL;
+
+	res = e4k_reg_set_mask(e4k, E4K_REG_DC2, 0x3f, iofs);
+	if(res < 0)
+		return res;
+
+	res = e4k_reg_set_mask(e4k, E4K_REG_DC3, 0x3f, qofs);
+	if(res < 0)
+		return res;
+
+	res = e4k_reg_set_mask(e4k, E4K_REG_DC4, 0x33, (qrange << 4) | irange);
+	return res;
+}
+
 /*! \brief Perform a DC offset calibration right now
  *  \param[e4k] handle to the tuner chip
  */

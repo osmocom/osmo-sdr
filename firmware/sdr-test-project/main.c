@@ -313,6 +313,27 @@ static int cmd_tuner_commonmode(struct cmd_state *cs, enum cmd_op op,
 	return 0;
 }
 
+static int cmd_tuner_iqofs(struct cmd_state *cs, enum cmd_op op,
+			const char *cmd, int argc, char ** argv)
+{
+	int iofs;
+	int qofs;
+	int irange;
+	int qrange;
+
+	if(op != CMD_OP_SET)
+		return -EINVAL;
+	if(argc < 4)
+		return -EINVAL;
+
+	iofs = strtol(argv[0], NULL, 10);
+	qofs = strtol(argv[1], NULL, 10);
+	irange = strtol(argv[2], NULL, 10);
+	qrange = strtol(argv[3], NULL, 10);
+
+	return e4k_manual_dc_offset(&e4k, iofs, irange, qofs, qrange);
+}
+
 static struct cmd cmds[] = {
 	{ "tuner.init", CMD_OP_EXEC, cmd_tuner_init,
 	  "Initialize the tuner" },
@@ -332,6 +353,8 @@ static struct cmd cmds[] = {
 	  "Generate DC offset table" },
 	{ "tuner.commonmode", CMD_OP_SET, cmd_tuner_commonmode,
 	  "Switch common mode voltage" },
+	{ "tuner.iqofs", CMD_OP_SET, cmd_tuner_iqofs,
+	  "Manually set I/Q offset and correction range" },
 
 	{ "si570.freq", CMD_OP_SET|CMD_OP_GET, cmd_si570_freq,
 	  "Change the SI570 clock frequency" },
