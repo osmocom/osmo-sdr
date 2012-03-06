@@ -714,6 +714,16 @@ int e4k_mixer_gain_set(struct e4k_state *e4k, int8_t value)
 	return e4k_reg_set_mask(e4k, E4K_REG_GAIN2, 1, bit);
 }
 
+int e4k_commonmode_set(struct e4k_state *e4k, int8_t value)
+{
+	if(value < 0)
+		return -EINVAL;
+	else if(value > 7)
+		return -EINVAL;
+
+	return e4k_reg_set_mask(e4k, E4K_REG_DC7, 7, value);
+}
+
 /*********************************************************************** 
  * DC Offset */
 
