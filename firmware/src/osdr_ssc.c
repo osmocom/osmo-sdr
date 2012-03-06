@@ -91,6 +91,7 @@ struct ssc_state {
 	int active;
 	uint32_t total_xfers;
 	uint32_t total_irqs;
+	uint32_t total_ovrun;
 };
 
 struct ssc_state ssc_state;
@@ -236,7 +237,15 @@ void HDMA_IrqHandler(void)
 
 void ssc_stats(void)
 {
-	printf("SSC num_irq=%u, num_xfers=%u\n\r", ssc_state.total_irqs, ssc_state.total_xfers);
+	printf("SSC num_irq=%u, num_xfers=%u, num_ovrun=%u\n\r",
+		ssc_state.total_irqs, ssc_state.total_xfers,
+		ssc_state.total_ovrun);
+}
+
+void SSC0_IrqHandler(void)
+{
+	if (AT91C_BASE_SSC0->SSC_SR & AT91C_SSC_OVRUN)
+		ssc_state.total_ovrun++;
 }
 
 int ssc_active(void)
@@ -292,6 +301,13 @@ int ssc_init(void)
 					 AT91C_SSC_CKG_NONE | AT91C_SSC_START_FALL_RF |
 					 AT91C_SSC_CKI,
 					 AT91C_SSC_MSBF | (32-1) );
+
+	SSC_DisableInterrupts(AT91C_BASE_SSC0, 0xffffffff);
+	SSC_EnableInterrupts(AT91C_BASE_SSC0, AT91C_SSC_OVRUN);
+
+	/* Enable Overrun interrupts */
+	IRQ_ConfigureIT(AT91C_ID_SSC0, 0, SSC0_IrqHandler);
+	IRQ_EnableIT(AT91C_ID_SSC0);
 
 	/* Enable DMA controller and register interrupt handler */
 	PMC_EnablePeripheral(AT91C_ID_HDMA);
