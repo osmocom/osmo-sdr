@@ -43,10 +43,25 @@ extern const USBDDriverDescriptors auddFastSourceDriverDescriptors;
 unsigned char fastsource_interfaces[3];
 static USBDDriver fast_source_driver;
 
+struct rctx_stats {
+	uint32_t total;		/* total number of samples */
+	uint32_t sum_ffff;	/* samples with I+Q = 0xffff */
+	uint32_t sum_fffe;	/* samples with I+Q = 0xfffe */
+	uint32_t sum_other;	/* samples with I+Q = something else */
+
+	uint32_t delta_1;	/* delta of last I to current I == 1 */
+	uint32_t delta_2;
+	uint32_t delta_3;
+	uint32_t delta_other;
+};
+
 struct usb_state {
 	struct llist_head queue;
 	int active;
 	uint8_t muted;
+#ifdef FPGA_TEST_STATS
+	struct rctx_stats stats;
+#endif
 };
 static struct usb_state usb_state;
 
@@ -136,6 +151,8 @@ void fastsource_req_hdlr(const USBGenericRequest *request)
 /* Initialize the driver */
 void fastsource_init(void)
 {
+	memset(&usb_state, 0, sizeof(usb_state));
+
 	INIT_LLIST_HEAD(&usb_state.queue);
 
 	USBDDriver_Initialize(&fast_source_driver, &auddFastSourceDriverDescriptors,
@@ -197,11 +214,76 @@ void fastsource_start(void)
 	}
 }
 
+/* Use every Nth sample for computing statistics.  At fpga.adc_clkdiv=2 we can
+ * still do every sample (NTH=1) at 20MHz SSC clock.  Above that, we have to look
+ * at a sub-set only and thus increase NTH */
+#define NTH	8
+
+/* iterate over all samples in a given rctx and generate statistics */
+static void rctx_stats_add(struct req_ctx *rctx, struct rctx_stats *s)
+{
+	uint16_t *data16;
+	int inited = 0;
+
+	//for (data16 = rctx->data; data16 < rctx->data + rctx->tot_len; data16 += 2) {
+	for (data16 = rctx->data; data16 < rctx->data + rctx->tot_len; data16 += NTH*2) {
+		uint32_t sum = data16[0] + data16[1];
+		uint16_t diff_i, diff_q, last_i, last_q;
+
+		s->total++;
+
+		switch (sum) {
+		case 0xFFFF:
+			s->sum_ffff++;
+			break;
+		case 0xFFFE:
+			s->sum_fffe++;
+			break;
+		default:
+			s->sum_other++;
+			break;
+		}
+
+		if (inited) {
+			diff_i = (uint16_t)(last_i - data16[0]);
+			diff_q = (uint16_t)(last_q - data16[0]);
+
+			switch (diff_i) {
+			case 1*NTH:
+				s->delta_1++;
+				break;
+			case 2*NTH:
+				s->delta_2++;
+				break;
+			case 3*NTH:
+				s->delta_3++;
+				break;
+			default:
+				s->delta_other++;
+			}
+		}
+
+		inited = 1;
+		last_i = data16[0];
+		last_q = data16[1];
+	}
+
+	if (s->total > 0xFFFF) {
+		printf("%u (f=%u/e=%u/o=%u) (1=%u/2=%u/3=%u/o=%u)\n\r",
+			s->total, s->sum_ffff, s->sum_fffe, s->sum_other,
+			s->delta_1, s->delta_2, s->delta_3, s->delta_other);
+		memset(s, 0, sizeof(*s));
+	}
+}
+
 /* SSC DMA informs us about completion of filling one rctx */
 void usb_submit_req_ctx(struct req_ctx *rctx)
 {
 	req_ctx_set_state(rctx, RCTX_STATE_UDP_EP2_PENDING);
 
+#ifdef FPGA_TEST_STATS
+	rctx_stats_add(rctx, &usb_state.stats);
+#endif
 	//TRACE_INFO("USB rctx enqueue (%08x, %u/%u)\n\r", rctx, rctx->size, rctx->tot_len);
 	req_ctx_enqueue(&usb_state.queue, rctx);
 
