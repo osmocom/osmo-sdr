@@ -576,10 +576,15 @@ int e4k_tune_params(struct e4k_state *e4k, struct e4k_pll_params *p)
 
 	memcpy(&e4k->vco, p, sizeof(e4k->vco));
 
-	/* FIXME: determine the band */
-
 	/* set the band */
-	//e4k_band_set(e4k, band);
+	if (e4k->vco.flo < MHZ(139))
+		e4k_band_set(e4k, E4K_BAND_VHF2);
+	else if (e4k->vco.flo < MHZ(350))
+		e4k_band_set(e4k, E4K_BAND_VHF3);
+	else if (e4k->vco.flo < MHZ(1135))
+		e4k_band_set(e4k, E4K_BAND_UHF);
+	else
+		e4k_band_set(e4k, E4K_BAND_L);
 
 	/* select and set proper RF filter */
 	e4k_rf_filter_set(e4k);
