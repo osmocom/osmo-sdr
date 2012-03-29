@@ -403,7 +403,7 @@ static unsigned int compute_fvco(uint32_t f_osc, uint8_t z, uint16_t x)
 	 * handle the fractional part with integer arithmetic:
 	 *  Fvco = Fosc * (Z + X/Y) <=> Fvco = Fosc * Z + (Fosc * X)/Y
 	 * This avoids X/Y = 0.  However, then we would overflow a 32bit
-	 * integer, as we cannot hold e.g. 26 MHz * 65535 either.
+	 * integer, as we cannot hold e.g. 26 MHz * 65536 either.
 	 */
 	fvco_z = (uint64_t)f_osc * z;
 
@@ -533,9 +533,9 @@ int e4k_compute_pll_params(struct e4k_pll_params *oscp, uint32_t fosc, uint32_t 
 		/* compute fractional part.  this will not overflow,
 		 * as fosc(max) = 30MHz and z(max) = 255 */
 		remainder = intended_fvco - (fosc * z);
-		/* remainder(max) = 30MHz, E4K_PLL_Y = 65535 -> 64bit! */
+		/* remainder(max) = 30MHz, E4K_PLL_Y = 65536 -> 64bit! */
 		x = (remainder * E4K_PLL_Y) / fosc;
-		/* x(max) as result of this computation is 65535 */
+		/* x(max) as result of this computation is 65536 */
 
 		flo = compute_flo(fosc, z, x, r);
 		if (flo < 0)
