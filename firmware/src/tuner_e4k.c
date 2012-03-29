@@ -324,7 +324,7 @@ int e4k_if_filter_bw_get(struct e4k_state *e4k, enum e4k_if_filter filter)
  * Frequency Control */
 
 #define E4K_FVCO_MIN_KHZ	2600000	/* 2.6 GHz */
-#define E4K_FVCO_MAX_KHZ	3600000	/* 3.6 GHz */
+#define E4K_FVCO_MAX_KHZ	3900000	/* 3.9 GHz */
 #define E4K_PLL_Y		65536
 
 #ifdef OUT_OF_SPEC
