@@ -43,6 +43,7 @@
 #include <utility/math.h>
 #include <utility/trace.h>
 #include <utility/led.h>
+#include <usb/device/dfu/dfu.h>
 
 #include <dmad/dmad.h>
 #include <dma/dma.h>
@@ -334,6 +335,13 @@ static int cmd_tuner_iqofs(struct cmd_state *cs, enum cmd_op op,
 	return e4k_manual_dc_offset(&e4k, iofs, irange, qofs, qrange);
 }
 
+static int cmd_dfu(struct cmd_state *cs, enum cmd_op op,
+                   const char *cmd, int argc, char ** argv)
+{
+	*((volatile unsigned long *)USB_DFU_MAGIC_ADDR) = USB_DFU_MAGIC;
+	NVIC_SystemReset();
+}
+
 static struct cmd cmds[] = {
 	{ "tuner.init", CMD_OP_EXEC, cmd_tuner_init,
 	  "Initialize the tuner" },
@@ -361,6 +369,8 @@ static struct cmd cmds[] = {
 	{ "si570.dump", CMD_OP_EXEC, cmd_si570_dump,
 	  "Dump SI570 registers" },
 
+	{ "dfu", CMD_OP_EXEC, cmd_dfu,
+	  "Enter DFU mode" },
 };
 
 //------------------------------------------------------------------------------
