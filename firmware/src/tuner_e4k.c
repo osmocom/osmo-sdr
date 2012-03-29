@@ -449,7 +449,7 @@ static int e4k_band_set(struct e4k_state *e4k, enum e4k_band band)
 		break;
 	}
 
-	rc = e4k_reg_set_mask(e4k, E4K_REG_SYNTH1, 0x03, band);
+	rc = e4k_reg_set_mask(e4k, E4K_REG_SYNTH1, 0x06, band << 1);
 	if (rc >= 0)
 		e4k->band = band;
 
