@@ -152,19 +152,20 @@ static const uint32_t rf_filt_center_l[] = {
 
 static int closest_arr_idx(const uint32_t *arr, unsigned int arr_size, uint32_t freq)
 {
-	unsigned int i;
-	uint32_t last_delta = 0xffffffff;
+	unsigned int i, bi;
+	uint32_t best_delta = 0xffffffff;
 
-	/* iterate over the array containing an ordered list of the center
+	/* iterate over the array containing a list of the center
 	 * frequencies, selecting the closest one */
 	for (i = 0; i < arr_size; i++) {
 		uint32_t delta = unsigned_delta(freq, arr[i]);
-		if (last_delta < delta)
-			return i-1;
-		last_delta = delta;
+		if (delta < best_delta) {
+			best_delta = delta;
+			bi = i;
+		}
 	}
 
-	return -ERANGE;
+	return bi;
 }
 
 /* return 4-bit index as to which RF filter to select */
