@@ -251,9 +251,9 @@ static const uint32_t *if_filter_bw[] = {
 };
 
 static const uint32_t if_filter_bw_len[] = {
-	[E4K_IF_FILTER_MIX] = ARRAY_SIZE(&mix_filter_bw),
-	[E4K_IF_FILTER_CHAN] = ARRAY_SIZE(&ifch_filter_bw),
-	[E4K_IF_FILTER_RC] = ARRAY_SIZE(&ifrc_filter_bw),
+	[E4K_IF_FILTER_MIX] = ARRAY_SIZE(mix_filter_bw),
+	[E4K_IF_FILTER_CHAN] = ARRAY_SIZE(ifch_filter_bw),
+	[E4K_IF_FILTER_RC] = ARRAY_SIZE(ifrc_filter_bw),
 };
 
 static const struct reg_field if_filter_fields[] = {
