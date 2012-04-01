@@ -776,7 +776,7 @@ static const int8_t if_gains_max[] = {
 
 struct gain_comb {
 	int8_t mixer_gain;
-	uint8_t if1_gain;
+	int8_t if1_gain;
 	uint8_t reg;
 };
 
