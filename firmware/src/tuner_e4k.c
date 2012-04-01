@@ -707,7 +707,7 @@ int e4k_mixer_gain_set(struct e4k_state *e4k, int8_t value)
 	uint8_t bit;
 
 	switch (value) {
-	case 0:
+	case 4:
 		bit = 0;
 		break;
 	case 12:
@@ -781,8 +781,8 @@ struct gain_comb {
 };
 
 static const struct gain_comb dc_gain_comb[] = {
-	{ 0, -3, 0x50 },
-	{ 0, 6, 0x51 },
+	{ 4, -3, 0x50 },
+	{ 4, 6, 0x51 },
 	{ 12, -3, 0x52 },
 	{ 12, 6, 0x53 },
 };
