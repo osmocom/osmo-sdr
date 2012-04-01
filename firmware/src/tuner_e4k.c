@@ -802,7 +802,7 @@ int e4k_dc_offset_gen_table(struct e4k_state *e4k)
 
 	/* iterate over all mixer + if_stage_1 gain combinations */
 	for (i = 0; i < ARRAY_SIZE(dc_gain_comb); i++) {
-		uint8_t offs_i, offs_q, range_i, range_q;
+		uint8_t offs_i, offs_q, range, range_i, range_q;
 
 		/* set the combination of mixer / if1 gain */
 		e4k_mixer_gain_set(e4k, dc_gain_comb[i].mixer_gain);
@@ -814,8 +814,9 @@ int e4k_dc_offset_gen_table(struct e4k_state *e4k)
 		/* extract I/Q offset and range values */
 		offs_i = e4k_reg_read(e4k, E4K_REG_DC2) & 0x3F;
 		offs_q = e4k_reg_read(e4k, E4K_REG_DC3) & 0x3F;
-		range_i = e4k_reg_read(e4k, E4K_REG_DC4) & 0x3;
-		range_q = (e4k_reg_read(e4k, E4K_REG_DC4) >> 4) & 0x3;
+		range  = e4k_reg_read(e4k, E4K_REG_DC4);
+		range_i = range & 0x3;
+		range_q = (range >> 4) & 0x3;
 
 		LOGP(DTUN, LOGL_DEBUG, "Table %u I=%u/%u, Q=%u/%u\n",
 			i, range_i, offs_i, range_q, offs_q);
