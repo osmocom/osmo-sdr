@@ -810,7 +810,6 @@ int e4k_dc_offset_gen_table(struct e4k_state *e4k)
 
 		/* perform actual calibration */
 		e4k_dc_offset_calibrate(e4k);
-		/* FIXME: do we have to wait? */
 
 		/* extract I/Q offset and range values */
 		offs_i = e4k_reg_read(e4k, E4K_REG_DC2) & 0x3F;
@@ -820,6 +819,7 @@ int e4k_dc_offset_gen_table(struct e4k_state *e4k)
 
 		LOGP(DTUN, LOGL_DEBUG, "Table %u I=%u/%u, Q=%u/%u\n",
 			i, range_i, offs_i, range_q, offs_q);
+
 		/* write into the table */
 		e4k_reg_write(e4k, dc_gain_comb[i].reg,
 			      TO_LUT(offs_q, range_q));
