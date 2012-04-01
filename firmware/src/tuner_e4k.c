@@ -796,6 +796,13 @@ int e4k_dc_offset_gen_table(struct e4k_state *e4k)
 	/* FIXME: read ont current gain values and write them back
 	 * before returning to the caller */
 
+	/* disable auto mixer gain */
+	e4k_reg_set_mask(e4k, E4K_REG_AGC7, E4K_AGC7_MIX_GAIN_AUTO, 0);
+
+	/* set LNA/IF gain to full manual */
+	e4k_reg_set_mask(e4k, E4K_REG_AGC1, E4K_AGC1_MOD_MASK,
+			 E4K_AGC_MOD_SERIAL);
+
 	/* set all 'other' gains to maximum */
 	for (i = 2; i <= 6; i++)
 		e4k_if_gain_set(e4k, i, if_gains_max[i]);
