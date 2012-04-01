@@ -300,6 +300,17 @@ int e4k_if_filter_bw_set(struct e4k_state *e4k, enum e4k_if_filter filter,
 	return e4k_field_write(e4k, field, bw_idx);
 }
 
+/*! \brief Enables / Disables the channel filter
+ *  \param[in] e4k reference to the tuner chip
+ *  \param[in] on 1=filter enabled, 0=filter disabled
+ *  \returns 0 success, negative errors
+ */
+int e4k_if_filter_chan_enable(struct e4k_state *e4k, int on)
+{
+	return e4k_reg_set_mask(e4k, E4K_REG_FILT3, E4K_FILT3_DISABLE,
+	                        on ? 0 : E4K_FILT3_DISABLE);
+}
+
 int e4k_if_filter_bw_get(struct e4k_state *e4k, enum e4k_if_filter filter)
 {
 	const uint32_t *arr;
