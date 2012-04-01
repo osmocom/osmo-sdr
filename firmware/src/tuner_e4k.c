@@ -857,6 +857,7 @@ static int magic_init(struct e4k_state *e4k)
 {
 	e4k_reg_write(e4k, 0x7e, 0x01);
 	e4k_reg_write(e4k, 0x7f, 0xfe);
+	e4k_reg_write(e4k, 0x82, 0x00);
 	e4k_reg_write(e4k, 0x86, 0x50);	/* polarity A */
 	e4k_reg_write(e4k, 0x87, 0x20);
 	e4k_reg_write(e4k, 0x88, 0x01);
