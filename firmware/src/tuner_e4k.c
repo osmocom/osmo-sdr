@@ -874,39 +874,54 @@ int e4k_init(struct e4k_state *e4k)
 	/* make a dummy i2c read or write command, will not be ACKed! */
 	e4k_reg_read(e4k, 0);
 
-	/* write some magic values into registers */
+	/* Make sure we reset everything and clear POR indicator */
+	e4k_reg_write(e4k, E4K_REG_MASTER1,
+		E4K_MASTER1_RESET |
+		E4K_MASTER1_NORM_STBY |
+		E4K_MASTER1_POR_DET
+	);
+
+	/* Configure clock input */
+	e4k_reg_write(e4k, E4K_REG_CLK_INP, 0x00);
+
+	/* Disable clock output */
+	e4k_reg_write(e4k, E4K_REG_REF_CLK, 0x00);
+	e4k_reg_write(e4k, E4K_REG_CLKOUT_PWDN, 0x96);
+
+	/* Write some magic values into registers */
 	magic_init(e4k);
 
+	/* Set common mode voltage a bit higher for more margin 850 mv */
+	e4k_commonmode_set(e4k, 4);
+
+	/* Initialize DC offset lookup tables */
+	e4k_dc_offset_gen_table(e4k);
+
+	/* Enable time variant DC correction */
+	e4k_reg_write(e4k, E4K_REG_DCTIME1, 0x01);
+	e4k_reg_write(e4k, E4K_REG_DCTIME2, 0x01);
+
 	/* Set LNA mode to autnonmous */
+	e4k_reg_write(e4k, E4K_REG_AGC4, 0x10); /* High threshold */
+	e4k_reg_write(e4k, E4K_REG_AGC5, 0x04);	/* Low threshold */
+	e4k_reg_write(e4k, E4K_REG_AGC6, 0x1a);	/* LNA calib + loop rate */
+
 	e4k_reg_set_mask(e4k, E4K_REG_AGC1, E4K_AGC1_MOD_MASK,
 			 E4K_AGC_MOD_IF_SERIAL_LNA_AUTON);
 
-	/* Set Miser Gain Control to autonomous */
+	/* Set Mixer Gain Control to autonomous */
 	e4k_reg_set_mask(e4k, E4K_REG_AGC7, E4K_AGC7_MIX_GAIN_AUTO,
 					    E4K_AGC7_MIX_GAIN_AUTO);
 
 	/* Enable LNA Gain enhancement */
+#if 0
 	e4k_reg_set_mask(e4k, E4K_REG_AGC11, 0x7,
 			 E4K_AGC11_LNA_GAIN_ENH | (2 << 1));
+#endif
 
 	/* Enable automatic IF gain mode switching */
 	e4k_reg_set_mask(e4k, E4K_REG_AGC8, 0x1, E4K_AGC8_SENS_LIN_AUTO);
 
-	/* FIXME: do we need to program Output Common Mode voltage ? */
-
-	/* FIXME: initialize DC offset lookup tables */
-
-	/* Disable Clock output, write 0x96 into 0x7A */
-	e4k_reg_write(e4k, E4K_REG_CLKOUT_PWDN, E4K_CLKOUT_DISABLE);
-
-	/* Clear the reset-detect register */
-	e4k_reg_set_mask(e4k, E4K_REG_MASTER1, E4K_MASTER1_POR_DET, E4K_MASTER1_POR_DET);
-
-	/* Set the most narrow filter we can possibly use */
-	e4k_if_filter_bw_set(e4k, E4K_IF_FILTER_MIX, KHZ(1900));
-	e4k_if_filter_bw_set(e4k, E4K_IF_FILTER_RC, KHZ(1000));
-	e4k_if_filter_bw_set(e4k, E4K_IF_FILTER_CHAN, KHZ(2150));
-#if 0
 	/* Select moderate gain levels */
 	e4k_if_gain_set(e4k, 1, 6);
 	e4k_if_gain_set(e4k, 2, 3);
@@ -914,5 +929,10 @@ int e4k_init(struct e4k_state *e4k)
 	e4k_if_gain_set(e4k, 4, 1);
 	e4k_if_gain_set(e4k, 5, 9);
 	e4k_if_gain_set(e4k, 6, 9);
-#endif
+
+	/* Set the most narrow filter we can possibly use */
+	e4k_if_filter_bw_set(e4k, E4K_IF_FILTER_MIX, KHZ(1900));
+	e4k_if_filter_bw_set(e4k, E4K_IF_FILTER_RC, KHZ(1000));
+	e4k_if_filter_bw_set(e4k, E4K_IF_FILTER_CHAN, KHZ(2150));
+	e4k_if_filter_chan_enable(e4k, 1);
 }
