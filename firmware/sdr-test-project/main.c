@@ -335,6 +335,34 @@ static int cmd_tuner_iqofs(struct cmd_state *cs, enum cmd_op op,
 	return e4k_manual_dc_offset(&e4k, iofs, irange, qofs, qrange);
 }
 
+static int cmd_tuner_reg(struct cmd_state *cs, enum cmd_op op,
+			 const char *cmd, int argc, char ** argv)
+{
+	uint8_t reg, val;
+
+	if (argc < 1)
+		return -EINVAL;
+
+	reg = strtol(argv[0], NULL, 16);
+
+	switch (op) {
+	case CMD_OP_GET:
+		val = e4k_reg_read(&e4k, reg);
+		uart_cmd_out(cs, "%02x=%02x\n\r", reg, val);
+		break;
+	case CMD_OP_SET:
+		if (argc < 2)
+			return -EINVAL;
+		val = strtol(argv[1], NULL, 16);
+		e4k_reg_write(&e4k, reg, val);
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
 static int cmd_dfu(struct cmd_state *cs, enum cmd_op op,
                    const char *cmd, int argc, char ** argv)
 {
@@ -363,6 +391,8 @@ static struct cmd cmds[] = {
 	  "Switch common mode voltage" },
 	{ "tuner.iqofs", CMD_OP_SET, cmd_tuner_iqofs,
 	  "Manually set I/Q offset and correction range" },
+	{ "tuner.reg", CMD_OP_SET|CMD_OP_GET, cmd_tuner_reg,
+	  "Manually access a register on the E4K" },
 
 	{ "si570.freq", CMD_OP_SET|CMD_OP_GET, cmd_si570_freq,
 	  "Change the SI570 clock frequency" },
