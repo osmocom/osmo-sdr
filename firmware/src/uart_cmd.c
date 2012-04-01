@@ -159,6 +159,11 @@ int uart_cmd_char(struct cmd_state *cs, uint8_t ch)
 			rc = handle_cb(cs, CMD_OP_SET, cs->cmd.buf, cs->arg.buf);
 			uart_cmd_reset(cs);
 			break;
+		case '?':
+			uart_cmd_out(cs, "\n\r");
+			rc = handle_cb(cs, CMD_OP_GET, cs->cmd.buf, cs->arg.buf);
+			uart_cmd_reset(cs);
+			break;
 		case ' ':
 		case '\t':
 			/* ignore any whitespace */
