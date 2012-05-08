@@ -5,3 +5,19 @@ repository: git://git.gnumonks.org/at91lib.git
 You need to put the at91lib and osmo-sdr into the same parent directory
 or adjust the paths in sdr-test-project/Makefile to match your layout.
 
+There are two independent progams you can build:
+
+1) usb-dfu-project
+   This is the bootloader that we flash into the DFU partition
+   at the start of the flash
+
+2) osmosdr-project
+   This is the actual OsmoSDR firmware.  There are two builds:
+
+   a) smo-sdr-test-osmo-sdr-at91sam3u4-dfu.bin
+      This is the image that you can flash into the DFU partition
+      using DFU itself
+
+   b) smo-sdr-test-osmo-sdr-at91sam3u4-flash.bin
+      This is a self-contained program that you can flash to the
+      beginning of the flash (in case you don't want to use DFU)
