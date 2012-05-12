@@ -6,5 +6,6 @@ includedir=@includedir@
 Name: OsmoSDR Library
 Description: C Utility Library
 Version: @VERSION@
+Cflags: -I${includedir}/ @OSMOSDR_PC_CFLAGS@
 Libs: -L${libdir} -losmosdr -lusb-1.0
-Cflags: -I${includedir}/
+Libs.private: @OSMOSDR_PC_LIBS@
