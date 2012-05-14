@@ -8,4 +8,4 @@ AM_CFLAGS = -fPIC -Wall
 lib_LTLIBRARIES = libosmosdr.la
 
 libosmosdr_la_SOURCES = osmosdr.c
-libosmosdr_la_LDFALGS = -version-info $(LIBVERSION)
+libosmosdr_la_LDFLAGS = -version-info $(LIBVERSION)
