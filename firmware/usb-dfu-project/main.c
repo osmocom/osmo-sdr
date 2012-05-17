@@ -62,6 +62,8 @@
 
 #include "dfu_desc.h"
 
+#include "opcode.h"
+
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
 /*----------------------------------------------------------------------------
@@ -104,12 +106,12 @@ static void ISR_Vbus(const Pin *pPin)
     /* Check current level on VBus */
     if (PIO_Get(&pinVbus))
     {
-        TRACE_INFO("VBUS conn\n\r");
+        //TRACE_INFO("VBUS conn\n\r");
         USBD_Connect();
     }
     else
     {
-        TRACE_INFO("VBUS discon\n\r");
+        //TRACE_INFO("VBUS discon\n\r");
         USBD_Disconnect();
     }
 }
@@ -133,7 +135,7 @@ static void VBus_Configure( void )
     }
     else
     {
-        TRACE_INFO("discon\n\r");
+        //TRACE_INFO("discon\n\r");
         USBD_Disconnect();
     }
 }
@@ -209,7 +211,7 @@ void USBDCallbacks_RequestReceived(const USBGenericRequest *request)
 void USBDDriverCallbacks_InterfaceSettingChanged(unsigned char interface,
 						 unsigned char setting)
 {
-	TRACE_INFO("DFU: IfSettingChgd(if=%u, alt=%u)\n\r", interface, setting);
+	//TRACE_INFO("DFU: IfSettingChgd(if=%u, alt=%u)\n\r", interface, setting);
 }
 
 #define BOOT_FLASH_SIZE		(16 * 1024)
@@ -233,8 +235,8 @@ static const struct flash_part flash_parts[] = {
 		.size =		AT91C_IRAM_SIZE,
 	},
 	[ALTIF_FPGA] = {
-		.base_addr =	AT91C_IFLASH1,
-		.size =		AT91C_IFLASH1_SIZE,
+		.base_addr =	0,
+		.size =		16*1024*1024, // really no limit
 	},
 };
 
@@ -242,11 +244,13 @@ static const struct flash_part flash_parts[] = {
 int USBDFU_handle_upload(uint8_t altif, unsigned int offset,
 			 uint8_t *buf, unsigned int req_len)
 {
+	return -EINVAL;
+#if 0
 	struct flash_part *part;
 	void *end, *addr;
 	uint32_t real_len;
 
-	TRACE_INFO("DFU: handle_upload(%u, %u, %u)\n\r", altif, offset, req_len);
+	//TRACE_INFO("DFU: handle_upload(%u, %u, %u)\n\r", altif, offset, req_len);
 
 	if (altif > ARRAY_SIZE(flash_parts))
 		return -EINVAL;
@@ -265,6 +269,94 @@ int USBDFU_handle_upload(uint8_t altif, unsigned int offset,
 	LED_Clear(USBD_LEDOTHER);
 
 	return real_len;
+#endif
+}
+
+extern unsigned short g_usDataType;
+
+static uint8_t fpgaBuf[1024];
+static uint fpgaBufStart; // file offset of first byte in buffer
+static uint fpgaBufEnd;
+static uint fpgaBufFill;
+static uint fpgaBufRPtr;
+static uint fpgaPushedAddr;
+
+short int ispProcessVME();
+void EnableHardware();
+
+void fpgaPushAddr()
+{
+	fpgaPushedAddr = fpgaBufRPtr;
+}
+
+void fpgaPopAddr()
+{
+	printf("*");
+	fpgaBufRPtr = fpgaPushedAddr;
+}
+
+uint8_t fpgaGetByte()
+{
+	uint8_t res = fpgaBuf[fpgaBufRPtr - fpgaBufStart];
+	fpgaBufRPtr++;
+
+	return res;
+}
+
+static int fpgaFlash(unsigned int offset, const uint8_t* buf, unsigned int len)
+{
+	int i;
+
+	if(offset == 0) {
+		for(i = 0; i < len; i++)
+			fpgaBuf[i] = buf[i];
+		fpgaBufStart = 0;
+		fpgaBufEnd = len;
+		fpgaBufFill = len;
+		fpgaBufRPtr = 0;
+
+		*((uint32_t*)(0x400e0410)) = (1 << 11);
+		*((uint32_t*)(0x400e0e00 + 0x44)) = (1 << 5) | (1 << 6) | (1 << 7) | (1 << 8);
+		*((uint32_t*)(0x400e0e00 + 0x60)) = (1 << 5) | (1 << 6) | (1 << 7) | (1 << 8);
+		*((uint32_t*)(0x400e0e00 + 0x54)) = (1 << 5) | (1 << 6) | (1 << 7) | (1 << 8);
+		*((uint32_t*)(0x400e0e00 + 0x10)) = (1 << 5) | (1 << 7) | (1 << 8);
+		*((uint32_t*)(0x400e0e00 + 0x00)) = (1 << 5) | (1 << 6) | (1 << 7) | (1 << 8);
+
+		if(fpgaGetByte())
+			g_usDataType = COMPRESS;
+		else g_usDataType = 0;
+
+	    EnableHardware();
+	} else {
+		for(i = 0; i < len; i++)
+			fpgaBuf[fpgaBufFill + i] = buf[i];
+		fpgaBufEnd += len;
+		fpgaBufFill += len;
+	}
+/*
+	printf("\n\rs:%d,e:%d,f:%d,r:%d,p:%d\n",
+		fpgaBufStart, fpgaBufEnd, fpgaBufFill, fpgaBufRPtr, fpgaPushedAddr);
+*/
+	while(fpgaBufEnd - fpgaBufRPtr > 192) {
+		if((i = ispProcessVME()) < 0)
+			return -1;
+	}
+
+	if(fpgaBufFill > 384) {
+		uint moveby = fpgaBufFill - 384;
+		uint movelen = fpgaBufFill - movelen;
+
+		for(i = 0; i < movelen; i++)
+			fpgaBuf[i] = fpgaBuf[i + moveby];
+		fpgaBufStart += moveby;
+		fpgaBufFill -= moveby;
+/*
+		printf("\n\rs:%d,e:%d,f:%d,r:%d,p:%d\n",
+			fpgaBufStart, fpgaBufEnd, fpgaBufFill, fpgaBufRPtr, fpgaPushedAddr);
+*/
+	}
+
+	return 0;
 }
 
 /* DFU callback */
@@ -286,14 +378,13 @@ int USBDFU_handle_dnload(uint8_t altif, unsigned int offset,
 	end = part->base_addr + part->size;
 
 	if (addr + len > end) {
-		TRACE_ERROR("Cannot write beyond end of DFU partition %u\n\r", altif);
+		TRACE_ERROR("Write beyond end (%u)\n\r", altif);
 		g_dfu.status = DFU_STATUS_errADDRESS;
 		return DFU_RET_STALL;
 	}
 
 	switch (altif) {
 	case ALTIF_APP:
-	case ALTIF_FPGA:
 		/* SAM3U Errata 46.2.1.3 */
 		SetFlashWaitState(6);
 		LED_Set(USBD_LEDOTHER);
@@ -302,13 +393,26 @@ int USBDFU_handle_dnload(uint8_t altif, unsigned int offset,
 		/* SAM3U Errata 46.2.1.3 */
 		SetFlashWaitState(2);
 		if (rc != 0) {
-			TRACE_ERROR("Error during write of DFU partition %u\n\r", altif);
+			TRACE_ERROR("Write error (%u)\n\r", altif);
 			g_dfu.status = DFU_STATUS_errPROG;
 			return DFU_RET_STALL;
 		}
 		break;
+
+	case ALTIF_FPGA:
+		LED_Set(USBD_LEDOTHER);
+		rc = fpgaFlash(offset, buf, len);
+		LED_Clear(USBD_LEDOTHER);
+		/* SAM3U Errata 46.2.1.3 */
+		if (rc != 0) {
+			TRACE_ERROR("FPGA error (ofs %d)\n\r", fpgaBufRPtr);
+			g_dfu.status = DFU_STATUS_errPROG;
+			return DFU_RET_STALL;
+		}
+		break;
+
 	default:
-		TRACE_WARNING("Write to DFU partition %u not implemented\n\r", altif);
+		TRACE_WARNING("Not implemented (%u)\n\r", altif);
 		g_dfu.status = DFU_STATUS_errTARGET;
 		break;
 	}
@@ -330,11 +434,11 @@ void dfu_drv_updstatus(void)
  *----------------------------------------------------------------------------*/
 
 extern void USBD_IrqHandler(void);
-
+/*
 static const char *rst_type_strs[8] = {
 	"General", "Backup", "Watchdog", "Softare", "User", "5", "6", "7"
 };
-
+*/
 int main(void)
 {
     volatile uint8_t usbConn = 0;
@@ -342,12 +446,12 @@ int main(void)
 
     TRACE_CONFIGURE(DBGU_STANDARD, 115200, BOARD_MCK);
 
-    printf("-- USB DFU Test %s --\n\r", SOFTPACK_VERSION);
+//    printf("-- USB DFU Test %s --\n\r", SOFTPACK_VERSION);
     printf("-- %s\n\r", BOARD_NAME);
-    printf("-- Compiled: %s %s --\n\r", __DATE__, __TIME__);
+//    printf("-- Compiled: %s %s --\n\r", __DATE__, __TIME__);
 
     rst_type = (RSTC_GetStatus() >> 8) & 0x7;
-    printf("-- Reset type: %s --\n\r", rst_type_strs[rst_type]);
+    //printf("-- Reset type: %s --\n\r", rst_type_strs[rst_type]);
 
     chipid_to_usbserial();
 
