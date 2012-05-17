@@ -1,0 +1,149 @@
+[Project]
+Current Flow=Generic
+VCS=0
+version=3
+Current Config=compile
+
+[Configurations]
+compile=usbrx_vhdl
+
+[Library]
+usbrx_vhdl=.\usbrx_vhdl.LIB
+
+[Settings]
+AccessRead=0
+AccessReadWrite=0
+AccessACCB=0
+AccessACCR=0
+AccessReadWriteSLP=0
+AccessReadTopLevel=1
+DisableC=1
+ENABLE_ADV_DATAFLOW=0
+FLOW_TYPE=HDL
+LANGUAGE=VHDL
+REFRESH_FLOW=1
+FAMILY=Lattice XP2
+fileopeninsrc=1
+fileopenfolder=C:\
+IMPL_TOOL=
+SYNTH_TOOL=
+NoWarningsSDF=0
+SDFErrorLimit=0
+EnableSDFErrorLimit=0
+ChangeSDFErrorToWarning=0
+NoTchkMsg=0
+NoTimingChecks=0
+HESPrepare=0
+EnableXtrace=0
+SplitNetVectors=0
+StackMemorySize=32
+RetvalMemorySize=32
+VsimAdditionalOptions=
+DisableVitalMsg=0
+VitalAccel=1
+VitalGlitches=0
+DisableIEEEWarnings=0
+
+[LocalVerilogSets]
+EnableSLP=1
+EnableDebug=0
+
+[LocalVhdlSets]
+CompileWithDebug=1
+DisableVHDL87Key=0
+EnableVHDL93Key=0
+EnableVHDL2002Key=1
+EnableVHDL2006Key=0
+EnableVHDL2008Key=0
+NetlistCompilation=1
+Syntax RelaxLRM=0
+MaxErrorsKey=100
+OptimizationLevel=3
+DisableRangeChecks=0
+ProtectLevel=0
+AdditionalOptions=
+IncrementalCompilation=0
+
+[$LibMap$]
+usbrx_vhdl=.
+Active_lib=
+
+[HierarchyViewer]
+SortInfo=u
+HierarchyInformation=
+ShowHide=ShowTopLevel
+Selected=
+
+[Folders]
+Name3=Makefiles
+Directory3=C:\
+Extension3=mak
+Name4=Memory
+Directory4=C:\
+Extension4=mem;mif;hex
+Name5=Dll Libraries
+Directory5=C:\
+Extension5=dll
+Name6=PDF
+Directory6=C:\
+Extension6=pdf
+Name7=HTML
+Directory7=C:\
+Extension7=
+
+[sdf.c.structure_con]
+
+[sdf.ea.tb_usbrx-rtl]
+0=src\testbench\usbrx_vhdl_usbrx_vhdl_vho.sdf| /tb_usbrx/uut, Average, No
+
+[Groups]
+mt_toolbox=1
+mt_filter=1
+usbrx=1
+usbrx\filter=1
+usbrx\datapath=1
+usbrx\toplevel=1
+testbench=1
+
+[Files]
+mt_toolbox/mt_toolbox.vhd=-1
+mt_toolbox/mt_clktools.vhd=-1
+mt_filter/mt_filter.vhd=-1
+mt_filter/mt_fil_storage_slow.vhd=-1
+mt_filter/mt_fil_mac_slow.vhd=-1
+mt_filter/mt_fir_symmetric_slow.vhd=-1
+usbrx/usbrx.vhd=-1
+usbrx\filter/usbrx_halfband.vhd=-1
+usbrx\datapath/usbrx_ad7357.vhd=-1
+usbrx\datapath/usbrx_offset.vhd=-1
+usbrx\datapath/usbrx_decimate.vhd=-1
+usbrx\datapath/usbrx_ssc.vhd=-1
+usbrx\toplevel/usbrx_clkgen.vhd=-1
+usbrx\toplevel/usbrx_spi.vhd=-1
+usbrx\toplevel/usbrx_regbank.vhd=-1
+usbrx\toplevel/usbrx_pwm.vhd=-1
+usbrx\toplevel/usbrx_toplevel.vhd=-1
+testbench/tb_filter.vhd=-1
+testbench/tb_usbrx.vhd=-1
+
+[Files.Data]
+.\src\mt_toolbox\mt_toolbox.vhd=VHDL Source Code
+.\src\mt_toolbox\mt_clktools.vhd=VHDL Source Code
+.\src\mt_filter\mt_filter.vhd=VHDL Source Code
+.\src\mt_filter\mt_fil_storage_slow.vhd=VHDL Source Code
+.\src\mt_filter\mt_fil_mac_slow.vhd=VHDL Source Code
+.\src\mt_filter\mt_fir_symmetric_slow.vhd=VHDL Source Code
+.\src\usbrx\usbrx.vhd=VHDL Source Code
+.\src\usbrx\filter\usbrx_halfband.vhd=VHDL Source Code
+.\src\usbrx\datapath\usbrx_ad7357.vhd=VHDL Source Code
+.\src\usbrx\datapath\usbrx_offset.vhd=VHDL Source Code
+.\src\usbrx\datapath\usbrx_decimate.vhd=VHDL Source Code
+.\src\usbrx\datapath\usbrx_ssc.vhd=VHDL Source Code
+.\src\usbrx\toplevel\usbrx_clkgen.vhd=VHDL Source Code
+.\src\usbrx\toplevel\usbrx_spi.vhd=VHDL Source Code
+.\src\usbrx\toplevel\usbrx_regbank.vhd=VHDL Source Code
+.\src\usbrx\toplevel\usbrx_pwm.vhd=VHDL Source Code
+.\src\usbrx\toplevel\usbrx_toplevel.vhd=VHDL Source Code
+.\src\testbench\tb_filter.vhd=VHDL Source Code
+.\src\testbench\tb_usbrx.vhd=VHDL Test Bench
+

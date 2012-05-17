@@ -1,0 +1,15 @@
+[Version]
+Version=8.3
+[Designs]
+usbrx_vhdl=.\usbrx_vhdl.adf
+[Settings]
+Active=usbrx_vhdl
+[Browser]
+sort=type
+mode=none
+[Order]
+order=1
+macro=
+[Expand]
+usbrx_vhdl=1
+timingsim=0
