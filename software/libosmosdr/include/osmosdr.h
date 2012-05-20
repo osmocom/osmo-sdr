@@ -32,6 +32,22 @@ OSMOSDR_API uint32_t osmosdr_get_device_count(void);
 
 OSMOSDR_API const char* osmosdr_get_device_name(uint32_t index);
 
+/*!
+ * Get USB device strings.
+ *
+ * NOTE: The string arguments must provide space for up to 256 bytes.
+ *
+ * \param index the device index
+ * \param manufact manufacturer name, may be NULL
+ * \param product product name, may be NULL
+ * \param serial serial number, may be NULL
+ * \return 0 on success
+ */
+OSMOSDR_API int osmosdr_get_device_usb_strings(uint32_t index,
+					       char *manufact,
+					       char *product,
+					       char *serial);
+
 OSMOSDR_API int osmosdr_open(osmosdr_dev_t **dev, uint32_t index);
 
 OSMOSDR_API int osmosdr_close(osmosdr_dev_t *dev);
@@ -61,6 +77,20 @@ OSMOSDR_API int osmosdr_set_clock_freq(osmosdr_dev_t *dev, uint32_t adc_clock,
  */
 OSMOSDR_API int osmosdr_get_clock_freq(osmosdr_dev_t *dev, uint32_t *adc_clock,
 					uint32_t *tun_clock);
+
+/*!
+ * Get USB device strings.
+ *
+ * NOTE: The string arguments must provide space for up to 256 bytes.
+ *
+ * \param dev the device handle given by osmosdr_open()
+ * \param manufact manufacturer name, may be NULL
+ * \param product product name, may be NULL
+ * \param serial serial number, may be NULL
+ * \return 0 on success
+ */
+OSMOSDR_API int osmosdr_get_usb_strings(osmosdr_dev_t *dev, char *manufact,
+					char *product, char *serial);
 
 /*!
  * Set the frequency the device is tuned to.
@@ -123,6 +153,8 @@ OSMOSDR_API int osmosdr_set_sample_rate(osmosdr_dev_t *dev, uint32_t rate);
 OSMOSDR_API uint32_t osmosdr_get_sample_rate(osmosdr_dev_t *dev);
 
 /* streaming functions */
+
+OSMOSDR_API int osmosdr_reset_buffer(osmosdr_dev_t *dev);
 
 OSMOSDR_API int osmosdr_read_sync(osmosdr_dev_t *dev, void *buf, int len, int *n_read);
 

@@ -84,8 +84,8 @@ typedef struct osmosdr_dongle {
 } osmosdr_dongle_t;
 
 static osmosdr_dongle_t known_devices[] = {
-	{ 0x16c0, 0x0763, "OsmoSDR" },
-	/* for future modifications of the OsmoSDR */
+	{ 0x16c0, 0x0763, "sysmocom OsmoSDR" },
+	/* here come future modifications of the OsmoSDR */
 };
 
 #define DEFAULT_BUF_NUMBER	32
@@ -155,6 +155,47 @@ int osmosdr_get_xtal_freq(osmosdr_dev_t *dev, uint32_t *adc_clock, uint32_t *tun
 		return -2;
 
 	*tun_clock = dev->tun_clock;
+
+	return 0;
+}
+
+int osmosdr_get_usb_strings(osmosdr_dev_t *dev, char *manufact, char *product,
+			    char *serial)
+{
+	struct libusb_device_descriptor dd;
+	libusb_device *device = NULL;
+	const int buf_max = 256;
+	int r = 0;
+
+	if (!dev || !dev->devh)
+		return -1;
+
+	device = libusb_get_device(dev->devh);
+
+	r = libusb_get_device_descriptor(device, &dd);
+	if (r < 0)
+		return -1;
+
+	if (manufact) {
+		memset(manufact, 0, buf_max);
+		libusb_get_string_descriptor_ascii(dev->devh, dd.iManufacturer,
+						   (unsigned char *)manufact,
+						   buf_max);
+	}
+
+	if (product) {
+		memset(product, 0, buf_max);
+		libusb_get_string_descriptor_ascii(dev->devh, dd.iProduct,
+						   (unsigned char *)product,
+						   buf_max);
+	}
+
+	if (serial) {
+		memset(serial, 0, buf_max);
+		libusb_get_string_descriptor_ascii(dev->devh, dd.iSerialNumber,
+						   (unsigned char *)serial,
+						   buf_max);
+	}
 
 	return 0;
 }
@@ -279,8 +320,8 @@ uint32_t osmosdr_get_device_count(void)
 	int i;
 	libusb_context *ctx;
 	libusb_device **list;
-	uint32_t device_count = 0;
 	struct libusb_device_descriptor dd;
+	uint32_t device_count = 0;
 	ssize_t cnt;
 
 	libusb_init(&ctx);
@@ -336,6 +377,52 @@ const char *osmosdr_get_device_name(uint32_t index)
 		return device->name;
 	else
 		return "";
+}
+
+int osmosdr_get_device_usb_strings(uint32_t index, char *manufact,
+				   char *product, char *serial)
+{
+	int r = -2;
+	int i;
+	libusb_context *ctx;
+	libusb_device **list;
+	struct libusb_device_descriptor dd;
+	osmosdr_dongle_t *device = NULL;
+	osmosdr_dev_t devt;
+	uint32_t device_count = 0;
+	ssize_t cnt;
+
+	libusb_init(&ctx);
+
+	cnt = libusb_get_device_list(ctx, &list);
+
+	for (i = 0; i < cnt; i++) {
+		libusb_get_device_descriptor(list[i], &dd);
+
+		device = find_known_device(dd.idVendor, dd.idProduct);
+
+		if (device) {
+			device_count++;
+
+			if (index == device_count - 1) {
+				r = libusb_open(list[i], &devt.devh);
+				if (!r) {
+					r = osmosdr_get_usb_strings(&devt,
+								    manufact,
+								    product,
+								    serial);
+					libusb_close(devt.devh);
+				}
+				break;
+			}
+		}
+	}
+
+	libusb_free_device_list(list, 1);
+
+	libusb_exit(ctx);
+
+	return r;
 }
 
 int osmosdr_open(osmosdr_dev_t **out_dev, uint32_t index)
