@@ -21,7 +21,7 @@
 # Setup library
 ########################################################################
 add_library(osmosdr_shared SHARED
-    osmosdr.c
+    libosmosdr.c
 )
 
 target_link_libraries(osmosdr_shared
@@ -33,7 +33,7 @@ set_target_properties(osmosdr_shared PROPERTIES OUTPUT_NAME osmosdr)
 set_target_properties(osmosdr_shared PROPERTIES SOVERSION 0 VERSION 0.0.0)
 
 add_library(osmosdr_static STATIC
-    osmosdr.c
+    libosmosdr.c
 )
 
 target_link_libraries(osmosdr_static
