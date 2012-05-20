@@ -48,9 +48,21 @@ set_target_properties(osmosdr_static PROPERTIES OUTPUT_NAME osmosdr)
 endif()
 
 ########################################################################
+# Build utility
+########################################################################
+add_executable(osmo_sdr osmo_sdr.c)
+target_link_libraries(osmo_sdr osmosdr_static
+    ${LIBUSB_LIBRARIES}
+)
+
+if(WIN32)
+set_property(TARGET osmo_sdr APPEND PROPERTY COMPILE_DEFINITIONS "osmosdr_STATIC" )
+endif()
+
+########################################################################
 # Install built library files & utilities
 ########################################################################
-install(TARGETS osmosdr_shared osmosdr_static
+install(TARGETS osmosdr_shared osmosdr_static osmo_sdr
     LIBRARY DESTINATION lib${LIB_SUFFIX} # .so/.dylib file
     ARCHIVE DESTINATION lib${LIB_SUFFIX} # .lib file
     RUNTIME DESTINATION bin              # .dll file
