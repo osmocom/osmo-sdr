@@ -541,7 +541,7 @@ int osmosdr_read_sync(osmosdr_dev_t *dev, void *buf, int len, int *n_read)
 	if (!dev)
 		return -1;
 
-	return libusb_bulk_transfer(dev->devh, 0x81, buf, len, n_read, BULK_TIMEOUT);
+	return libusb_bulk_transfer(dev->devh, 0x86, buf, len, n_read, BULK_TIMEOUT);
 }
 
 static void LIBUSB_CALL _libusb_callback(struct libusb_transfer *xfer)
@@ -644,7 +644,7 @@ int osmosdr_read_async(osmosdr_dev_t *dev, osmosdr_read_async_cb_t cb, void *ctx
 	for(i = 0; i < dev->xfer_buf_num; ++i) {
 		libusb_fill_bulk_transfer(dev->xfer[i],
 					  dev->devh,
-					  0x81,
+					  0x86,
 					  dev->xfer_buf[i],
 					  dev->xfer_buf_len,
 					  _libusb_callback,
