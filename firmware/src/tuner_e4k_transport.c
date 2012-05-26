@@ -44,7 +44,7 @@ int e4k_reg_write(struct e4k_state *e4k, uint8_t reg, uint8_t val)
 	return 0;
 }
 
-int e4k_reg_read(struct e4k_state *e4k, uint8_t reg)
+uint8_t e4k_reg_read(struct e4k_state *e4k, uint8_t reg)
 {
 	unsigned char rc;
 	uint8_t val;

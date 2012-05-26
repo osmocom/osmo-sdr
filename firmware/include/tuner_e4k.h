@@ -19,6 +19,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define E4K_CHECK_ADDR	0x02
+#define E4K_CHECK_VAL	0x40
+
 enum e4k_reg {
 	E4K_REG_MASTER1		= 0x00,
 	E4K_REG_MASTER2		= 0x01,
@@ -186,6 +189,7 @@ struct e4k_state {
 	uint8_t i2c_addr;
 	enum e4k_band band;
 	struct e4k_pll_params vco;
+	void *rtl_dev;
 };
 
 int e4k_init(struct e4k_state *e4k);
@@ -194,23 +198,21 @@ int e4k_mixer_gain_set(struct e4k_state *e4k, int8_t value);
 int e4k_commonmode_set(struct e4k_state *e4k, int8_t value);
 int e4k_tune_freq(struct e4k_state *e4k, uint32_t freq);
 int e4k_tune_params(struct e4k_state *e4k, struct e4k_pll_params *p);
-int e4k_compute_pll_params(struct e4k_pll_params *oscp, uint32_t fosc, uint32_t intended_flo);
+uint32_t e4k_compute_pll_params(struct e4k_pll_params *oscp, uint32_t fosc, uint32_t intended_flo);
 int e4k_if_filter_bw_get(struct e4k_state *e4k, enum e4k_if_filter filter);
-int e4k_if_filter_bw_set(struct e4k_state *e4k, enum e4k_if_filter filter,
-		         uint32_t bandwidth);
+int e4k_if_filter_bw_set(struct e4k_state *e4k, enum e4k_if_filter filter, uint32_t bandwidth);
 int e4k_if_filter_chan_enable(struct e4k_state *e4k, int on);
 int e4k_rf_filter_set(struct e4k_state *e4k);
 
 int e4k_reg_write(struct e4k_state *e4k, uint8_t reg, uint8_t val);
-int e4k_reg_read(struct e4k_state *e4k, uint8_t reg);
-
-int sam3u_e4k_init(struct e4k_state *e4k, void *i2c, uint8_t slave_addr);
-void sam3u_e4k_power(struct e4k_state *e4k, int on);
-void sam3u_e4k_stby(struct e4k_state *e4k, int on);
-
+uint8_t e4k_reg_read(struct e4k_state *e4k, uint8_t reg);
 
 int e4k_manual_dc_offset(struct e4k_state *e4k, int8_t iofs, int8_t irange, int8_t qofs, int8_t qrange);
 int e4k_dc_offset_calibrate(struct e4k_state *e4k);
 int e4k_dc_offset_gen_table(struct e4k_state *e4k);
+
+int e4k_set_lna_gain(struct e4k_state *e4k, int32_t gain);
+int e4k_enable_manual_gain(struct e4k_state *e4k, uint8_t manual);
+int e4k_set_enh_gain(struct e4k_state *e4k, int32_t gain);
 
 #endif /* _E4K_TUNER_H */
