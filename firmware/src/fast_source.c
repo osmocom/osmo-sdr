@@ -17,7 +17,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include <stdlib.h>
 #include <stdint.h>
 #include <errno.h>
@@ -34,10 +33,17 @@
 #include <usb/common/audio/AUDGenericRequest.h>
 #include <usb/common/audio/AUDFeatureUnitRequest.h>
 #include <usb/common/audio/AUDFeatureUnitDescriptor.h>
-
+#include <common.h>
 
 #include <fast_source_descr.h>
 #include <fast_source.h>
+
+#include <tuner_e4k.h>
+#include <si570.h>
+#include <osdr_fpga.h>
+
+#define OSMOSDR_CTRL_WRITE 0x07
+#define OSMOSDR_CTRL_READ 0x87
 
 extern const USBDDriverDescriptors auddFastSourceDriverDescriptors;
 unsigned char fastsource_interfaces[3];
@@ -87,6 +93,213 @@ static void fastsource_set_feat_cur_val(uint8_t entity, uint8_t channel,
 		USBD_Stall(0);
 }
 
+static void handle_osmosdr_read(const USBGenericRequest* request)
+{
+	int len = USBGenericRequest_GetLength(request);
+	printf("OsmoSDR GET request: type:%d, request:%d, value:%d, index: %d, length: %d\n\r",
+		USBGenericRequest_GetType(request),
+		USBGenericRequest_GetRequest(request),
+		USBGenericRequest_GetValue(request),
+		USBGenericRequest_GetIndex(request),
+		len);
+	USBD_Stall(0);
+}
+
+static uint32_t read_bytewise32(const uint8_t* data)
+{
+	return (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3];
+}
+
+typedef struct Request_ {
+	uint16_t func;
+	uint16_t len;
+} Request;
+
+#define FUNC(group, function) ((group << 8) | function)
+
+#define GROUP_GENERAL 0x00
+#define GROUP_FPGA_V2 0x01
+#define GROUP_VCXO_SI570 0x02
+#define GROUP_TUNER_E4K 0x03
+
+const static Request g_writeRequests[] = {
+	// general api
+	{ FUNC(GROUP_GENERAL, 0x00), 0 }, // init whatever
+	{ FUNC(GROUP_GENERAL, 0x01), 0 }, // power down
+	{ FUNC(GROUP_GENERAL, 0x02), 0 }, // power up
+
+	// fpga commands
+	{ FUNC(GROUP_FPGA_V2, 0x00), 0 }, // fpga init
+	{ FUNC(GROUP_FPGA_V2, 0x01), 5 }, // osdr_fpga_reg_write(uint8_t reg, uint32_t val)
+
+	// si570 vcxo commads
+	{ FUNC(GROUP_VCXO_SI570, 0x00), 0 }, // si570_init()
+	{ FUNC(GROUP_VCXO_SI570, 0x01), 16 }, // si570_reg_write
+	{ FUNC(GROUP_VCXO_SI570, 0x02), 8 }, // si570_set_freq(uint32_t freq, int trim);
+
+	// e4000 tuner commands
+	{ FUNC(GROUP_TUNER_E4K, 0x00), 0 }, // e4k_init()
+	{ FUNC(GROUP_TUNER_E4K, 0x01), 0 }, // reg write
+	{ FUNC(GROUP_TUNER_E4K, 0x02), 2 }, // e4k_if_gain_set(uint8_t stage, int8_t value)
+	{ FUNC(GROUP_TUNER_E4K, 0x03), 1 }, // e4k_mixer_gain_set(struct e4k_state *e4k, int8_t value)
+	{ FUNC(GROUP_TUNER_E4K, 0x04), 1 }, // e4k_commonmode_set(int8_t value)
+	{ FUNC(GROUP_TUNER_E4K, 0x05), 4 }, // e4k_tune_freq(uint32_t freq)
+	{ FUNC(GROUP_TUNER_E4K, 0x06), 5 }, // e4k_if_filter_bw_set(enum e4k_if_filter filter, uint32_t bandwidth)
+	{ FUNC(GROUP_TUNER_E4K, 0x07), 1 }, // e4k_if_filter_chan_enable(int on)
+	{ FUNC(GROUP_TUNER_E4K, 0x08), 4 }, // e4k_manual_dc_offset(int8_t iofs, int8_t irange, int8_t qofs, int8_t qrange)
+	{ FUNC(GROUP_TUNER_E4K, 0x09), 0 }, // e4k_dc_offset_calibrate()
+	{ FUNC(GROUP_TUNER_E4K, 0x0a), 0 }, // e4k_dc_offset_gen_table()
+	{ FUNC(GROUP_TUNER_E4K, 0x0b), 4 }, // e4k_set_lna_gain(int32_t gain)
+	{ FUNC(GROUP_TUNER_E4K, 0x0c), 1 }, // e4k_enable_manual_gain(uint8_t manual)
+	{ FUNC(GROUP_TUNER_E4K, 0x0d), 4 }, // e4k_set_enh_gain(int32_t gain)
+};
+
+typedef struct WriteState_ {
+	uint8_t data[16];
+	uint16_t func;
+} WriteState;
+
+static WriteState g_writeState;
+extern struct e4k_state e4k;
+extern struct si570_ctx si570;
+
+static void finalize_write(void *pArg, unsigned char status, unsigned int transferred, unsigned int remaining)
+{
+	int res;
+
+	if((status != 0) ||(remaining != 0)) {
+		USBD_Stall(0);
+		return;
+	}
+
+	printf("Func: %04x ...", g_writeState.func);
+
+	switch(g_writeState.func) {
+		// general api
+		case FUNC(GROUP_GENERAL, 0x00): // init all
+			res = 0; // no op so far
+			break;
+		case FUNC(GROUP_GENERAL, 0x01): // power down
+			osdr_fpga_power(0);
+			sam3u_e4k_stby(&e4k, 1);
+			sam3u_e4k_power(&e4k, 0);
+			res = 0;
+			break;
+		case FUNC(GROUP_GENERAL, 0x02): // power up
+			osdr_fpga_power(1);
+			sam3u_e4k_power(&e4k, 1);
+			sam3u_e4k_stby(&e4k, 0);
+			res = 0;
+			break;
+
+		// fpga commands
+		case FUNC(GROUP_FPGA_V2, 0x00): // fpga init
+			res = 0; // no op so far
+			break;
+		case FUNC(GROUP_FPGA_V2, 0x01):
+			osdr_fpga_reg_write(g_writeState.data[0], read_bytewise32(g_writeState.data + 1));
+			res = 0;
+			break;
+
+		// si570 vcxo commands
+		case FUNC(GROUP_VCXO_SI570, 0x00): // si570_init()
+			res = si570_reinit(&si570);
+			break;
+		case FUNC(GROUP_VCXO_SI570, 0x01):
+			res = si570_reg_write(&si570, g_writeState.data[0], g_writeState.data[1], g_writeState.data + 2);
+			break;
+		case FUNC(GROUP_VCXO_SI570, 0x02):
+			res = si570_set_freq(&si570, read_bytewise32(g_writeState.data), read_bytewise32(g_writeState.data + 4));
+			break;
+
+		// e4000 tuner commands
+		case FUNC(GROUP_TUNER_E4K, 0x00):
+			res = e4k_init(&e4k);
+			break;
+		case FUNC(GROUP_TUNER_E4K, 0x01): // reg write
+			break;
+		case FUNC(GROUP_TUNER_E4K, 0x02):
+			res = e4k_if_gain_set(&e4k, g_writeState.data[0], g_writeState.data[1]);
+			break;
+		case FUNC(GROUP_TUNER_E4K, 0x03):
+			res = e4k_mixer_gain_set(&e4k, g_writeState.data[0]);
+			break;
+		case FUNC(GROUP_TUNER_E4K, 0x04):
+			res = e4k_commonmode_set(&e4k, g_writeState.data[0]);
+			break;
+		case FUNC(GROUP_TUNER_E4K, 0x05):
+			res = e4k_tune_freq(&e4k, read_bytewise32(g_writeState.data));
+			break;
+		case FUNC(GROUP_TUNER_E4K, 0x06):
+			res = e4k_if_filter_bw_set(&e4k, g_writeState.data[0], read_bytewise32(g_writeState.data + 1));
+			break;
+		case FUNC(GROUP_TUNER_E4K, 0x07):
+			res = e4k_if_filter_chan_enable(&e4k, g_writeState.data[0]);
+			break;
+		case FUNC(GROUP_TUNER_E4K, 0x08):
+			res = e4k_manual_dc_offset(&e4k, g_writeState.data[0], g_writeState.data[1], g_writeState.data[2], g_writeState.data[3]);
+			break;
+		case FUNC(GROUP_TUNER_E4K, 0x09):
+			res = e4k_dc_offset_calibrate(&e4k);
+			break;
+		case FUNC(GROUP_TUNER_E4K, 0x0a):
+			res = e4k_dc_offset_gen_table(&e4k);
+			break;
+		case FUNC(GROUP_TUNER_E4K, 0x0b):
+			res = e4k_set_lna_gain(&e4k, read_bytewise32(g_writeState.data));
+			break;
+		case FUNC(GROUP_TUNER_E4K, 0x0c):
+			res = e4k_enable_manual_gain(&e4k, g_writeState.data[0]);
+			break;
+		case FUNC(GROUP_TUNER_E4K, 0x0d):
+			res = e4k_set_enh_gain(&e4k, read_bytewise32(g_writeState.data));
+			break;
+
+		default:
+			res = -1;
+			break;
+	}
+
+	printf(" res: %d\n\r", res);
+
+	if(res == 0)
+		USBD_Write(0, 0, 0, 0, 0);
+	else USBD_Stall(0);
+}
+
+static void handle_osmosdr_write(const USBGenericRequest* request)
+{
+	uint16_t func = USBGenericRequest_GetValue(request);
+	int len = USBGenericRequest_GetLength(request);
+	int i;
+
+	printf("OsmoSDR SET request: type:%d, request:%d, value:%04x, index: %04x, length: %d\n\r",
+		USBGenericRequest_GetType(request),
+		USBGenericRequest_GetRequest(request),
+		USBGenericRequest_GetValue(request),
+		USBGenericRequest_GetIndex(request),
+		len);
+
+	for(i = 0; i < ARRAY_SIZE(g_writeRequests); i++) {
+		if(g_writeRequests[i].func == func)
+			break;
+	}
+	if(i == ARRAY_SIZE(g_writeRequests)) {
+		USBD_Stall(0);
+		return;
+	}
+	if(len != g_writeRequests[i].len) {
+		USBD_Stall(0);
+		return;
+	}
+
+	g_writeState.func = func;
+
+	if(len > 0)
+		USBD_Read(0, g_writeState.data, len, finalize_write, 0);
+	else finalize_write(NULL, 0, 0, 0);
+}
+
 /* handler for EP0 (control) requests */
 void fastsource_req_hdlr(const USBGenericRequest *request)
 {
@@ -100,6 +313,13 @@ void fastsource_req_hdlr(const USBGenericRequest *request)
 	case USBGenericRequest_CLASS:
 		/* continue below */
 		break;
+	case USBGenericRequest_VENDOR:
+		if(USBGenericRequest_GetRequest(request) == OSMOSDR_CTRL_WRITE)
+			handle_osmosdr_write(request);
+		else if(USBGenericRequest_GetRequest(request) == OSMOSDR_CTRL_READ)
+			handle_osmosdr_read(request);
+		else USBD_Stall(0);
+		return;
 	default:
 		TRACE_WARNING("Unsupported request type %u\n\r",
 				USBGenericRequest_GetType(request));
@@ -140,6 +360,7 @@ void fastsource_req_hdlr(const USBGenericRequest *request)
 			USBD_Stall(0);
 		}
 		break;
+
 	default:
 		TRACE_WARNING("Unsupported request %u\n\r",
 				USBGenericRequest_GetIndex(request));
@@ -152,6 +373,7 @@ void fastsource_req_hdlr(const USBGenericRequest *request)
 void fastsource_init(void)
 {
 	memset(&usb_state, 0, sizeof(usb_state));
+	memset(fastsource_interfaces, 0x00, sizeof(fastsource_interfaces));
 
 	INIT_LLIST_HEAD(&usb_state.queue);
 
@@ -184,6 +406,7 @@ static void wr_compl_cb(void *arg, unsigned char status, unsigned int transferre
 static int refill_dma(void)
 {
 	struct req_ctx *rctx;
+	int res;
 
 	rctx = req_ctx_dequeue(&usb_state.queue);
 	if (!rctx) {
@@ -194,9 +417,9 @@ static int refill_dma(void)
 
 	req_ctx_set_state(rctx, RCTX_STATE_UDP_EP2_BUSY);
 
-	if (USBD_Write(EP_NR, rctx->data, rctx->tot_len, wr_compl_cb,
-			rctx) != USBD_STATUS_SUCCESS) {
-		TRACE_WARNING("USB EP busy while re-filling USB DMA\n\r");
+	if ((res = USBD_Write(EP_NR, rctx->data, rctx->tot_len, wr_compl_cb, rctx)) != USBD_STATUS_SUCCESS) {
+		TRACE_WARNING("USB EP busy while re-filling USB DMA: %d\n\r", res);
+		req_ctx_set_state(rctx, RCTX_STATE_FREE);
 		usb_state.active = 0;
 		return -EBUSY;
 	}
@@ -208,6 +431,9 @@ static int refill_dma(void)
 /* user API: requests us to start transmitting data via USB IN EP */
 void fastsource_start(void)
 {
+	if(USBD_GetState() != USBD_STATE_CONFIGURED)
+		return;
+
 	if (!usb_state.active) {
 		usb_state.active = 1;
 		refill_dma();
@@ -300,6 +526,7 @@ void USBDDriverCallbacks_InterfaceSettingChanged(unsigned char interface,
 						 unsigned char setting)
 {
 	printf("USB_IF_CHANGED(%u, %u)\n\r", interface, setting);
+
 	if ((interface == AUDDLoopRecDriverDescriptors_STREAMINGIN)
 	    && (setting == 0))
 		LED_Clear(USBD_LEDOTHER);
