@@ -92,7 +92,13 @@ int si570_init(struct si570_ctx *ctx, void *i2c_dev, uint8_t i2c_addr)
 {
 	ctx->i2c = i2c_dev;
 	ctx->slave_addr = i2c_addr;
+	ctx->init = 0;
 
+	return si570_reinit(ctx);
+}
+
+int si570_reinit(struct si570_ctx *ctx)
+{
 	TRACE_DEBUG("si570_init()\r\n");
 
 	if (0 != si570_reset(ctx)) {
@@ -111,6 +117,7 @@ int si570_init(struct si570_ctx *ctx, void *i2c_dev, uint8_t i2c_addr)
 
 	return 0;
 }
+
 
 void si570_print_info(struct si570_ctx *ctx)
 {
@@ -294,4 +301,10 @@ void si570_regdump(struct si570_ctx *ctx)
 	TRACE_DEBUG("SI570 regs: %02X %02X %02X %02X %02X %02X %02X %02X\n",
 		data[0], data[1], data[2], data[3],
 		data[4], data[5], data[6], data[7]);
+}
+
+//write register(s)
+int si570_reg_write(struct si570_ctx *ctx, uint8_t reg, int len, const uint8_t* data)
+{
+	return smbus8_write_bytes(ctx->i2c, ctx->slave_addr, reg, data, len);
 }

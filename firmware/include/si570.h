@@ -48,6 +48,7 @@ struct si570_ctx {
 
 //API
 int si570_init(struct si570_ctx *ctx, void *i2c_dev, uint8_t i2c_addr);
+int si570_reinit(struct si570_ctx *ctx);
 int si570_read_calibration(struct si570_ctx *ctx);
 int si570_reset(struct si570_ctx *ctx);
 //mode of operation
@@ -56,5 +57,7 @@ int si570_get_lock(struct si570_ctx *ctx);
 int si570_set_freq(struct si570_ctx *ctx, uint32_t freq, int trim);
 //dump all registers
 void si570_regdump(struct si570_ctx *ctx);
+//write register(s)
+int si570_reg_write(struct si570_ctx *ctx, uint8_t reg, int len, const uint8_t* data);
 
 #endif //__SI570_H__
