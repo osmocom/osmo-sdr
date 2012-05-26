@@ -88,8 +88,8 @@ static const Pin pins[] = {PINS_TWI0, PIN_PCK0, PINS_LEDS, PINS_SPI0,
 			   PINS_MISC, PINS_SSC, PINS_FPGA_JTAG};
 
 static Twid twid;
-static struct e4k_state e4k;
-static struct si570_ctx si570;
+struct e4k_state e4k;
+struct si570_ctx si570;
 
 static void set_si570_freq(uint32_t freq)
 {
@@ -392,8 +392,6 @@ int main(void)
     // Initialize the DBGU
     TRACE_CONFIGURE(DBGU_STANDARD, 115200, BOARD_MCK);
 
-    printf("trace configured!!\n");
-
     // Switch to Main clock
     AT91C_BASE_PMC->PMC_MCKR = (AT91C_BASE_PMC->PMC_MCKR & ~AT91C_PMC_CSS) | AT91C_PMC_CSS_MAIN_CLK;
     while ((AT91C_BASE_PMC->PMC_SR & AT91C_PMC_MCKRDY) == 0);
@@ -418,10 +416,9 @@ int main(void)
     TWI_ConfigureMaster(AT91C_BASE_TWI0, TWI_CLOCK, SSC_MCK);
     TWID_Initialize(&twid, AT91C_BASE_TWI0);
 
-    printf("-- osmo-sdr testing project %s --\n\r", SOFTPACK_VERSION);
+    printf("-- osmo-sdr project %s --\n\r", SOFTPACK_VERSION);
     printf("-- %s\n\r", BOARD_NAME);
     printf("-- Compiled: %s %s --\n\r", __DATE__, __TIME__);
-
 
 	req_ctx_init();
 	PIO_InitializeInterrupts(0);
@@ -439,29 +436,25 @@ int main(void)
 	set_si570_freq(30000000);
 
 	sam3u_e4k_init(&e4k, &twid, E4K_I2C_ADDR);
+	e4k.vco.fosc = 30000000;
 
 	osdr_fpga_init(SSC_MCK);
 	osdr_fpga_reg_write(OSDR_FPGA_REG_ADC_TIMING, (1 << 8) | 255);
-	osdr_fpga_reg_write(OSDR_FPGA_REG_PWM1, (1 << 400) | 800);
+	//osdr_fpga_reg_write(OSDR_FPGA_REG_PWM1, (1 << 400) | 800);
 
 	ssc_init();
 
     // Enter menu loop
     while (1) {
 
-	if (DBGU_IsRxReady()) {
+    	if (DBGU_IsRxReady()) {
         	key = DBGU_GetChar();
         	// Process user input
-		if (uart_cmd_char(&cmd_state, key) == 1) {
-			//ssc_stats();
-		}
-	}
-
-	/* Try to (re-)start the SSC DMA if the IN ISO EP is open but the
-	 * SSC DMA is not active */
-	if (fastsource_interfaces[2] == 1 && !ssc_active())
-		ssc_dma_start();
+        	if (uart_cmd_char(&cmd_state, key) == 1) {
+        		//ssc_stats();
+        	}
+    	}
+    	ssc_dma_start();
+    	fastsource_start();
     }
 }
-
-
