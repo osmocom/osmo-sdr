@@ -107,8 +107,7 @@ static void __refill_dma()
 		struct req_ctx *rctx;
 
 		/* obtain an unused request context from pool */
-		rctx = req_ctx_find_get(0, RCTX_STATE_FREE,
-					RCTX_STATE_SSC_RX_PENDING);
+		rctx = req_ctx_find_get(0, RCTX_STATE_FREE, RCTX_STATE_SSC_RX_PENDING);
 		if (!rctx) {
 			break;
 		}
@@ -129,8 +128,10 @@ static void __refill_dma()
 		req_ctx_enqueue(&ssc_state.pending_rctx, rctx);
 		ssc_state.hdma_chain_len++;
 	}
+	/*
 	if (ssc_state.hdma_chain_len <= 1)
 		TRACE_ERROR("Unable to get rctx for SSC DMA refill\n\r");
+	*/
 }
 
 int ssc_dma_start(void)
@@ -140,12 +141,12 @@ int ssc_dma_start(void)
 	__refill_dma();
 
 	if (ssc_state.active) {
-		TRACE_WARNING("Cannot start SSC DMA, active == 1\n\r");
+		//TRACE_WARNING("Cannot start SSC DMA, active == 1\n\r");
 		return -EBUSY;
 	}
 
 	if (llist_empty(&ssc_state.pending_rctx)) {
-		TRACE_WARNING("Cannot start SSC DMA, no rctx pending\n\r");
+		//TRACE_WARNING("Cannot start SSC DMA, no rctx pending\n\r");
 		return -ENOMEM;
 	}
 
@@ -324,5 +325,3 @@ int ssc_init(void)
 
 	return 0;
 }
-
-
