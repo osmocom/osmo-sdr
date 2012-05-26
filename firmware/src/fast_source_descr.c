@@ -53,6 +53,10 @@
 
 #include <usb/device/dfu/dfu.h>
 
+// #define AUDIOSOURCE 1
+#undef AUDIOSOURCE
+
+
 //------------------------------------------------------------------------------
 //         Definitions
 //------------------------------------------------------------------------------
@@ -76,6 +80,8 @@
 #define AUDDLoopRecDriverDescriptors_RELEASE             0x0100
 //------------------------------------------------------------------------------
 
+
+#ifdef AUDIOSOURCE
 //------------------------------------------------------------------------------
 //         Internal types
 //------------------------------------------------------------------------------
@@ -1460,3 +1466,212 @@ const USBDDriverDescriptors auddFastSourceDriverDescriptors = {
     4 // Number of string descriptors
 };
 
+#else
+
+typedef struct {
+   /// Size of the descriptor in bytes.
+   unsigned char bLength;
+   /// Descriptor type (USBGenericDescriptor_ENDPOINT).
+   unsigned char bDescriptorType;
+   /// Address and direction of the endpoint.
+   unsigned char bEndpointAddress;
+   /// Endpoint type and additional characteristics (for isochronous endpoints).
+   unsigned char bmAttributes;
+   /// Maximum packet size (in bytes) of the endpoint.
+   unsigned short wMaxPacketSize;
+   /// Polling rate of the endpoint.
+   unsigned char bInterval;
+} __attribute__ ((packed)) BulkEndpointDescriptor; // GCC
+
+typedef struct {
+
+    /// Standard configuration.
+    USBConfigurationDescriptor configuration;
+    /// Audio stream interface.
+    USBInterfaceDescriptor stream;
+    /// Streaming out endpoint descriptor.
+    BulkEndpointDescriptor bulkInEndpoint;
+} __attribute__ ((packed)) BulkDriverConfigurationDescriptors; // GCC
+
+
+const USBDeviceDescriptor deviceDescriptor = {
+    sizeof(USBDeviceDescriptor),
+    USBGenericDescriptor_DEVICE,
+    USBDeviceDescriptor_USB2_00,
+    0, // class - all defined at interface level
+    0, // subclass
+    0, // protocol
+    CHIP_USB_ENDPOINTS_MAXPACKETSIZE(0),
+    AUDDLoopRecDriverDescriptors_VENDORID,
+    AUDDLoopRecDriverDescriptors_PRODUCTID,
+    AUDDLoopRecDriverDescriptors_RELEASE,
+    1, // Manufacturer string descriptor index
+    2, // Product string descriptor index
+    3, // Index of serial number string descriptor
+    1  // One possible configuration
+};
+
+/// configuration descriptors for bulk
+const BulkDriverConfigurationDescriptors configurationDescriptors = {
+
+    // Configuration descriptor
+    {
+        sizeof(USBConfigurationDescriptor),
+        USBGenericDescriptor_CONFIGURATION,
+        sizeof(BulkDriverConfigurationDescriptors),
+        1, // This configuration has 1 interfaces
+        1, // This is configuration #1
+        0, // No string descriptor
+        BOARD_USB_BMATTRIBUTES,
+        USBConfigurationDescriptor_POWER(100)
+    },
+    // Bulk interface standard descriptor
+    {
+        sizeof(USBInterfaceDescriptor),
+        USBGenericDescriptor_INTERFACE,
+        0, // interface number
+        0, // This is alternate setting #0
+        1, // This interface uses one endpoint
+        254, // class
+        0, // subclass
+        0, // protocol
+        0 // No string descriptor
+    },
+    {
+        sizeof(BulkEndpointDescriptor),
+        USBGenericDescriptor_ENDPOINT,
+        USBEndpointDescriptor_ADDRESS(
+            USBEndpointDescriptor_IN,
+            AUDDLoopRecDriverDescriptors_DATAIN),
+        USBEndpointDescriptor_BULK,
+        0x200, // packet size
+        0 // Polling interval = 0 ms
+    },
+};
+
+/// configuration descriptors for bulk
+const BulkDriverConfigurationDescriptors otherConfigurationDescriptors = {
+
+    // Configuration descriptor
+    {
+        sizeof(USBConfigurationDescriptor),
+        USBGenericDescriptor_OTHERSPEEDCONFIGURATION,
+        sizeof(BulkDriverConfigurationDescriptors),
+        1, // This configuration has 1 interface
+        1, // This is configuration #1
+        0, // No string descriptor
+        BOARD_USB_BMATTRIBUTES,
+        USBConfigurationDescriptor_POWER(100)
+    },
+    // Bulk interface standard descriptor
+    {
+        sizeof(USBInterfaceDescriptor),
+        USBGenericDescriptor_INTERFACE,
+        0, // interface number
+        0, // This is alternate setting #0
+        1, // This interface uses one endpoint
+        254, // class
+        0, // subclass
+        0, // protocol
+        0 // No string descriptor
+    },
+    {
+        sizeof(BulkEndpointDescriptor),
+        USBGenericDescriptor_ENDPOINT,
+        USBEndpointDescriptor_ADDRESS(
+            USBEndpointDescriptor_IN,
+            AUDDLoopRecDriverDescriptors_DATAIN),
+        USBEndpointDescriptor_BULK,
+        0x200, // packet size
+        0 // Polling interval = 0 ms
+    },
+};
+
+
+/// String descriptor with the supported languages.
+const unsigned char languageIdDescriptor[] = {
+
+    USBStringDescriptor_LENGTH(1),
+    USBGenericDescriptor_STRING,
+    USBStringDescriptor_ENGLISH_US
+};
+
+/// USB device qualifier descriptor.
+const USBDeviceQualifierDescriptor qualifierDescriptor = {
+
+    sizeof(USBDeviceQualifierDescriptor),
+    USBGenericDescriptor_DEVICEQUALIFIER,
+    USBDeviceDescriptor_USB2_00,
+    0, // class
+    0, // subclass
+    0, // protocol
+    CHIP_USB_ENDPOINTS_MAXPACKETSIZE(0),
+    1, // Device has one possible configuration
+    0 // Reserved
+};
+
+/// Manufacturer name.
+const unsigned char manufacturerDescriptor[] = {
+
+    USBStringDescriptor_LENGTH(8),
+    USBGenericDescriptor_STRING,
+    USBStringDescriptor_UNICODE('s'),
+    USBStringDescriptor_UNICODE('y'),
+    USBStringDescriptor_UNICODE('s'),
+    USBStringDescriptor_UNICODE('m'),
+    USBStringDescriptor_UNICODE('o'),
+    USBStringDescriptor_UNICODE('c'),
+    USBStringDescriptor_UNICODE('o'),
+    USBStringDescriptor_UNICODE('m'),
+};
+
+/// Product name.
+const unsigned char productDescriptor[] = {
+
+    USBStringDescriptor_LENGTH(7),
+    USBGenericDescriptor_STRING,
+    USBStringDescriptor_UNICODE('O'),
+    USBStringDescriptor_UNICODE('s'),
+    USBStringDescriptor_UNICODE('m'),
+    USBStringDescriptor_UNICODE('o'),
+    USBStringDescriptor_UNICODE('S'),
+    USBStringDescriptor_UNICODE('D'),
+    USBStringDescriptor_UNICODE('R'),
+};
+
+/// Product serial number.
+const unsigned char serialNumberDescriptor[] = {
+
+    USBStringDescriptor_LENGTH(3),
+    USBGenericDescriptor_STRING,
+    USBStringDescriptor_UNICODE('6'),
+    USBStringDescriptor_UNICODE('6'),
+    USBStringDescriptor_UNICODE('6')
+};
+
+/// Array of pointers to the four string descriptors.
+const unsigned char *stringDescriptors[] = {
+
+    languageIdDescriptor,
+    manufacturerDescriptor,
+    productDescriptor,
+    serialNumberDescriptor,
+};
+
+const USBDDriverDescriptors auddFastSourceDriverDescriptors = {
+    &deviceDescriptor,
+    (const USBConfigurationDescriptor *) &configurationDescriptors,
+#if defined (CHIP_USB_UDPHS) || defined(CHIP_USB_OTGHS)
+    &qualifierDescriptor,
+    (const USBConfigurationDescriptor *) &otherConfigurationDescriptors,
+    &deviceDescriptor,
+    (const USBConfigurationDescriptor *) &configurationDescriptors,
+    &qualifierDescriptor,
+    (const USBConfigurationDescriptor *) &otherConfigurationDescriptors,
+#else
+    0, 0, 0, 0, 0, 0,
+#endif
+    stringDescriptors,
+    4 // Number of string descriptors
+};
+#endif
