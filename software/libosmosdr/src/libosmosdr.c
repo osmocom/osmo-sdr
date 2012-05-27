@@ -105,8 +105,104 @@ static osmosdr_dongle_t known_devices[] = {
 
 #define CTRL_IN		(LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_ENDPOINT_IN)
 #define CTRL_OUT	(LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_ENDPOINT_OUT)
+#define FUNC(group, function) ((group << 8) | function)
+
 #define CTRL_TIMEOUT	300
 #define BULK_TIMEOUT	0
+
+int e4k_init(void *dev) {
+	osmosdr_dev_t* devt = (osmosdr_dev_t*)dev;
+	return libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
+				       FUNC(3, 0), 0,
+				       NULL, 0, CTRL_TIMEOUT);
+}
+
+int e4k_exit(void *dev) { return 0; }
+
+int e4k_set_freq(void *dev, uint32_t freq) {
+	osmosdr_dev_t* devt = (osmosdr_dev_t*)dev;
+	uint8_t buffer[4];
+
+	buffer[0] = (uint8_t)(freq >> 24);
+	buffer[1] = (uint8_t)(freq >> 16);
+	buffer[2] = (uint8_t)(freq >> 8);
+	buffer[3] = (uint8_t)(freq >> 0);
+
+	return libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
+				       FUNC(3, 5), 0,
+				       buffer, 4, CTRL_TIMEOUT);
+}
+
+int e4k_set_bw(void *dev, int bw) { return 0; }
+
+int e4k_set_lna_gain(void *dev, int32_t gain) {
+	osmosdr_dev_t* devt = (osmosdr_dev_t*)dev;
+	uint8_t buffer[4];
+
+	buffer[0] = (uint8_t)(gain >> 24);
+	buffer[1] = (uint8_t)(gain >> 16);
+	buffer[2] = (uint8_t)(gain >> 8);
+	buffer[3] = (uint8_t)(gain >> 0);
+
+	return libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
+				       FUNC(3, 0x0b), 0,
+				       buffer, 4, CTRL_TIMEOUT);
+}
+
+int e4k_mixer_gain_set(void *dev, int8_t gain) {
+	osmosdr_dev_t* devt = (osmosdr_dev_t*)dev;
+	uint8_t buffer[1];
+
+	buffer[0] = gain;
+
+	return libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
+				       FUNC(3, 0x0d), 0,
+				       buffer, 1, CTRL_TIMEOUT);
+}
+
+int e4k_set_enh_gain(void *dev, int32_t gain) {
+	osmosdr_dev_t* devt = (osmosdr_dev_t*)dev;
+	uint8_t buffer[4];
+
+	buffer[0] = (uint8_t)(gain >> 24);
+	buffer[1] = (uint8_t)(gain >> 16);
+	buffer[2] = (uint8_t)(gain >> 8);
+	buffer[3] = (uint8_t)(gain >> 0);
+
+	return libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
+				       FUNC(3, 0x0d), 0,
+				       buffer, 4, CTRL_TIMEOUT);
+}
+
+int e4k_set_gain(void *dev, int gain) {
+	int8_t mixgain = (gain > 340) ? 12 : 4;
+	int enhgain = (gain - 420);
+	if(e4k_set_lna_gain(dev, min(300, gain - 40)) == -EINVAL)
+		return -1;
+	if(e4k_mixer_gain_set(dev, mixgain) == -EINVAL)
+		return -1;
+	if(enhgain >= 0)
+		if(e4k_set_enh_gain(dev, enhgain) == -EINVAL)
+			return -1;
+	return 0;
+}
+
+int e4k_set_gain_mode(void *dev, int manual) {
+	osmosdr_dev_t* devt = (osmosdr_dev_t*)dev;
+	uint8_t buffer[1];
+
+	buffer[0] = (uint8_t)manual;
+
+	return libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
+				       FUNC(3, 0x0c), 0,
+				       buffer, 1, CTRL_TIMEOUT);
+}
+
+static osmosdr_tuner_t tuner = {
+	e4k_init, e4k_exit,
+	e4k_set_freq,
+	e4k_set_bw, e4k_set_gain, e4k_set_gain_mode
+};
 
 int osmosdr_set_xtal_freq(osmosdr_dev_t *dev, uint32_t adc_clock, uint32_t tun_clock)
 {
@@ -209,7 +305,7 @@ int osmosdr_set_center_freq(osmosdr_dev_t *dev, uint32_t freq)
 		return -1;
 
 	if (dev->tuner->set_freq) {
-		/* TODO: r = dev->tuner->set_freq(dev, freq); */
+		r = dev->tuner->set_freq(dev, freq);
 	}
 
 	if (!r)
@@ -236,7 +332,7 @@ int osmosdr_set_tuner_gain(osmosdr_dev_t *dev, int gain)
 		return -1;
 
 	if (dev->tuner->set_gain) {
-		/* TODO: r = dev->tuner->set_gain((void *)dev, gain); */
+		r = dev->tuner->set_gain((void *)dev, gain);
 	}
 
 	if (!r)
@@ -263,7 +359,7 @@ int osmosdr_set_tuner_gain_mode(osmosdr_dev_t *dev, int mode)
 		return -1;
 
 	if (dev->tuner->set_gain_mode) {
-		/* TODO: r = dev->tuner->set_gain_mode((void *)dev, mode); */
+		r = dev->tuner->set_gain_mode((void *)dev, mode);
 	}
 
 	return r;
@@ -281,7 +377,7 @@ int osmosdr_set_sample_rate(osmosdr_dev_t *dev, uint32_t samp_rate)
 		samp_rate = MAX_SAMP_RATE;
 
 	if (dev->tuner && dev->tuner->set_bw) {
-		/* TODO: dev->tuner->set_bw(dev, samp_rate); */
+		dev->tuner->set_bw(dev, samp_rate);
 	}
 
 	if (!r)
@@ -486,12 +582,14 @@ int osmosdr_open(osmosdr_dev_t **out_dev, uint32_t index)
 
 	/* TODO: osmosdr_init_baseband(dev); */
 
+	dev->tuner = &tuner; /* so far we support only one tuner */
+
 found:
 	if (dev->tuner) {
 		dev->tun_clock = dev->adc_clock;
 
 		if (dev->tuner->init) {
-			/* TODO: r = dev->tuner->init(dev); */
+			r = dev->tuner->init(dev);
 		}
 	}
 
