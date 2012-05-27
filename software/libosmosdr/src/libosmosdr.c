@@ -156,7 +156,7 @@ int e4k_mixer_gain_set(void *dev, int8_t gain) {
 	buffer[0] = gain;
 
 	return libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
-				       FUNC(3, 0x0d), 0,
+				       FUNC(3, 0x03), 0,
 				       buffer, 1, CTRL_TIMEOUT);
 }
 
