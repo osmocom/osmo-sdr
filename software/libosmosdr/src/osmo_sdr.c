@@ -31,7 +31,7 @@
 
 #include "osmosdr.h"
 
-#define DEFAULT_SAMPLE_RATE		2048000
+#define DEFAULT_SAMPLE_RATE		500000
 #define DEFAULT_ASYNC_BUF_NUMBER	32
 #define DEFAULT_BUF_LENGTH		(16 * 16384)
 #define MINIMAL_BUF_LENGTH		512
@@ -44,14 +44,14 @@ void usage(void)
 {
 	#ifdef _WIN32
 	fprintf(stderr,
-		"Usage:\t osmo_sdr-win.exe [device_index] [samplerate in kHz] "
+		"Usage:\t osmo_sdr.exe [device_index] [samplerate in kHz] "
 		"[gain] [frequency in Hz] [filename]\n");
 	#else
 	fprintf(stderr,
 		"Usage:\t -f frequency_to_tune_to [Hz]\n"
 		"\t[-s samplerate (default: 2048000 Hz)]\n"
 		"\t[-d device_index (default: 0)]\n"
-		"\t[-g tuner_gain (default: -1dB)]\n"
+		"\t[-g gain (default: 0 for auto)]\n"
 		"\t[-b output_block_size (default: 16 * 16384)]\n"
 		"\t[-S force sync output (default: async)]\n"
 		"\tfilename (a '-' dumps samples to stdout)\n\n");
@@ -98,7 +98,7 @@ int main(int argc, char **argv)
 	char *filename = NULL;
 	int n_read;
 	int r, opt;
-	int i, gain = -10; // tenths of a dB
+	int i, gain = 0;
 	int sync_mode = 0;
 	FILE *file;
 	uint8_t *buffer;
@@ -107,7 +107,7 @@ int main(int argc, char **argv)
 	uint32_t samp_rate = DEFAULT_SAMPLE_RATE;
 	uint32_t out_block_size = DEFAULT_BUF_LENGTH;
 	int device_count;
-	char vendor[256], product[256], serial[256];
+	char vendor[256] = { 0 }, product[256] = { 0 }, serial[256] = { 0 };
 #ifndef _WIN32
 	while ((opt = getopt(argc, argv, "d:f:g:s:b:S::")) != -1) {
 		switch (opt) {
@@ -118,7 +118,7 @@ int main(int argc, char **argv)
 			frequency = (uint32_t)atof(optarg);
 			break;
 		case 'g':
-			gain = (int)(atof(optarg) * 10);
+			gain = (int)(atof(optarg) * 10); /* tenths of a dB */
 			break;
 		case 's':
 			samp_rate = (uint32_t)atof(optarg);
@@ -145,7 +145,7 @@ int main(int argc, char **argv)
 		usage();
 	dev_index = atoi(argv[1]);
 	samp_rate = atoi(argv[2])*1000;
-	gain=(int)(atof(argv[3]) * 10);
+	gain=(int)(atof(argv[3]) * 10); /* tenths of a dB */
 	frequency = atoi(argv[4]);
 	filename = argv[5];
 #endif
@@ -213,12 +213,24 @@ int main(int argc, char **argv)
 	else
 		fprintf(stderr, "Tuned to %u Hz.\n", frequency);
 
-	/* Set the tuner gain */
-	r = osmosdr_set_tuner_gain(dev, gain);
-	if (r < 0)
-		fprintf(stderr, "WARNING: Failed to set tuner gain.\n");
-	else
-		fprintf(stderr, "Tuner gain set to %f dB.\n", gain/10.0);
+	if (0 == gain) {
+		 /* Enable automatic gain */
+		r = osmosdr_set_tuner_gain_mode(dev, 0);
+		if (r < 0)
+			fprintf(stderr, "WARNING: Failed to enable automatic gain.\n");
+	} else {
+		/* Enable manual gain */
+		r = osmosdr_set_tuner_gain_mode(dev, 1);
+		if (r < 0)
+			fprintf(stderr, "WARNING: Failed to enable manual gain.\n");
+
+		/* Set the tuner gain */
+		r = osmosdr_set_tuner_gain(dev, gain);
+		if (r < 0)
+			fprintf(stderr, "WARNING: Failed to set tuner gain.\n");
+		else
+			fprintf(stderr, "Tuner gain set to %f dB.\n", gain/10.0);
+	}
 
 	if(strcmp(filename, "-") == 0) { /* Write samples to stdout */
 		file = stdout;
