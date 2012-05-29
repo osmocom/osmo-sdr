@@ -138,6 +138,8 @@ VPATH += $(USB)/common/audio
 
 # Objects built from C source files
 C_OBJECTS += main.o
+C_OBJECTS += hardware.o
+C_OBJECTS += slimpro.o
 C_OBJECTS += dfu_desc.o
 C_OBJECTS += sam3u_chipid_usbserial.o
 C_OBJECTS += USBD_UDPHS.o
