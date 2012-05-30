@@ -37,15 +37,16 @@ entity usbrx_regbank is
 
 		-- config
 		cfg_pwm    : out usbrx_pwm_config_t;
+		cfg_gpio   : out usbrx_gpio_config_t;
 		cfg_adc    : out usbrx_adc_config_t;
 		cfg_ssc    : out usbrx_ssc_config_t;
 		cfg_fil    : out usbrx_fil_config_t;
 		cfg_off    : out usbrx_off_config_t;
-	
-		-- status (TODO HACK)
-		adc_i      : in  unsigned(13 downto 0);
-		adc_q      : in  unsigned(13 downto 0);
 		
+		-- status
+		stat_ref   : in  usbrx_ref_status_t;
+		stat_gpio  : in  usbrx_gpio_status_t;
+	
 		-- SPI interface
 		spi_ncs    : in  std_logic;
 		spi_sclk   : in  std_logic;
@@ -71,6 +72,10 @@ architecture rtl of usbrx_regbank is
 	signal reg_ssc2 : std_logic_vector(7 downto 0);
 	signal reg_fil  : std_logic_vector(2 downto 0);
 	signal reg_off  : std_logic_vector(31 downto 0);
+	signal reg_gain : std_logic_vector(31 downto 0);
+	signal reg_swap : std_logic_vector(0 downto 0);
+	signal reg_ioe  : std_logic_vector(10 downto 0);
+	signal reg_iod  : std_logic_vector(10 downto 0);
 	
 	-- avoid block-ram inference
 	attribute syn_romstyle : string;
@@ -111,6 +116,10 @@ begin
 			reg_ssc2  <= x"01";
 			reg_fil   <= "011";	
 			reg_off   <= x"00000000";
+			reg_gain  <= x"80008000";
+			reg_swap  <= "0";
+			reg_ioe   <= "00000000000";
+			reg_iod   <= "00000000000";
 		elsif rising_edge(clk) then
 			-- output zeros by default
 			bus_rdata <= (others=>'0');
@@ -152,9 +161,8 @@ begin
 					end if;
 			
 				when 5 =>
-					-- ADC Quickhack
-					bus_rdata(15 downto  0) <= to_slv16(adc_i);
-					bus_rdata(31 downto 16) <= to_slv16(adc_q);
+					-- <unused>
+					null;
 					
 				when 6 =>
 					-- decimation filter
@@ -164,11 +172,44 @@ begin
 					end if;
 					
 				when 7 =>
-				 	-- offset stage
+				 	-- sample offset
 					bus_rdata <= reg_off;
 					if bus_wena='1' then
 						reg_off <= bus_wdata(31 downto 0);
 					end if;
+				when 8 =>
+					-- sample gain
+					bus_rdata <= reg_gain;
+					if bus_wena='1' then
+						reg_gain <= bus_wdata(31 downto 0);
+					end if;
+				when 9 =>
+					-- sample swap
+					bus_rdata(0 downto 0) <= reg_swap;
+					if bus_wena='1' then
+						reg_swap <= bus_wdata( 0 downto 0);
+					end if;
+					
+				when 10 =>
+					-- GPIO - output enable
+					bus_rdata(10 downto 0) <= reg_ioe;
+					if bus_wena='1' then
+						reg_ioe <= bus_wdata(10 downto 0);
+					end if;
+				when 11 =>
+					-- GPIO - output data
+					bus_rdata(10 downto 0) <= reg_iod;
+					if bus_wena='1' then
+						reg_iod <= bus_wdata(10 downto 0);
+					end if;
+				when 12 =>
+					-- GPIO - input data
+					bus_rdata(10 downto 0) <= stat_gpio.idata;
+					
+				when 13 =>
+					-- reference frequency
+					bus_rdata(24 downto  0) <= std_logic_vector(stat_ref.lsb);
+					bus_rdata(31 downto 25) <= std_logic_vector(stat_ref.msb);
 					
 				when others =>
 					-- invalid address
@@ -190,5 +231,10 @@ begin
 	cfg_fil.decim  <= unsigned(reg_fil);
 	cfg_off.ioff   <= signed(reg_off(15 downto  0));
 	cfg_off.qoff   <= signed(reg_off(31 downto 16));
+	cfg_off.igain  <= unsigned(reg_gain(15 downto  0));
+	cfg_off.qgain  <= unsigned(reg_gain(31 downto 16));
+	cfg_off.swap   <= reg_swap(0);
+	cfg_gpio.oena  <= reg_ioe;
+	cfg_gpio.odata <= reg_iod;
 	
 end rtl;

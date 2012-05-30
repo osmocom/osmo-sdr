@@ -1,7 +1,7 @@
 ---------------------------------------------------------------------------------------------------
--- Filename    : usbrx.vhd
+-- Filename    : usbrx_gpio.vhd
 -- Project     : OsmoSDR FPGA Firmware
--- Purpose     : OsmoSDR package
+-- Purpose     : GPIO Block
 ---------------------------------------------------------------------------------------------------
 
 -----------------------------------------------------------------------------------
@@ -24,63 +24,49 @@
 library ieee;
 	use ieee.std_logic_1164.all;
 	use ieee.numeric_std.all;
-	
-package usbrx is
-	
-	-- PWM config
-	type usbrx_pwm_config_t is record
-		freq0 : unsigned(15 downto 0);
-		freq1 : unsigned(15 downto 0);
-		duty0 : unsigned(15 downto 0);
-		duty1 : unsigned(15 downto 0);
-	end record;
-		
-	-- ADC interface config
-	type usbrx_adc_config_t is record
-		clkdiv : unsigned(7 downto 0);
-		acqlen : unsigned(7 downto 0);
-	end record;
-		
-	-- SSC interface config
-	type usbrx_ssc_config_t is record
-		clkdiv : unsigned(7 downto 0);
-		tmode  : std_logic;
-	end record;
-	
-	-- offset stage config
-	type usbrx_off_config_t is record
-		swap  : std_logic;
-		ioff  : signed(15 downto 0);
-		qoff  : signed(15 downto 0);
-		igain : unsigned(15 downto 0);
-		qgain : unsigned(15 downto 0);
-	end record;
-		
-	-- decimation filter config
-	type usbrx_fil_config_t is record
-		decim : unsigned(2 downto 0);
-	end record;
-	
-	-- clock reference status
-	type usbrx_ref_status_t is record
-		lsb : unsigned(24 downto 0);
-		msb : unsigned(6 downto 0);
-	end record;
-		
-	-- GPIO config
-	type usbrx_gpio_config_t is record
-		oena  : std_logic_vector(10 downto 0);
-		odata : std_logic_vector(10 downto 0);
-	end record;
-	
-	-- clock reference status
-	type usbrx_gpio_status_t is record
-		idata : std_logic_vector(10 downto 0);
-	end record;
-	
-end usbrx;
+library work;
+	use work.all;
+	use work.mt_toolbox.all;
+	use work.usbrx.all;
 
-package body usbrx is
-	-- nothing so far
-end usbrx;
+entity usbrx_gpio is
+	port(
+		-- common
+		clk    : in  std_logic;
+		reset  : in  std_logic;
+		
+		-- GPIOs
+		gpio   : inout std_logic_vector(10 downto 0);
+		
+		-- config / status
+		config : in  usbrx_gpio_config_t;
+		status : out usbrx_gpio_status_t
+	);
+end usbrx_gpio;
 
+architecture rtl of usbrx_gpio is
+
+	-- register
+	signal ireg : std_logic_vector(10 downto 0) := (others=>'0');
+	signal oreg : std_logic_vector(10 downto 0) := (others=>'0');
+	signal oena : std_logic_vector(10 downto 0) := (others=>'0');
+	
+begin
+	
+	-- create output-driver
+	od: for i in gpio'range generate
+	begin
+		gpio(i) <= oreg(i) when oena(i)='1' else 'Z';
+	end generate;
+	
+	-- IOBs
+	process(clk)
+	begin
+		if rising_edge(clk) then
+			ireg <= to_X01(gpio);
+			oreg <= config.odata;
+			oena <= config.oena;
+		end if;
+	end process;
+	
+end rtl;

@@ -42,12 +42,7 @@ entity usbrx_clkgen is
 		clk_30 		: out std_logic;		-- 30MHz clock
 		clk_80 		: out std_logic;		-- 80MHz clock
 		rst_30	 	: out std_logic;		-- 30MHz reset
-		rst_80	 	: out std_logic;		-- 80MHz reset
-		
-		-- debug
-		dbg_ext     : out std_logic;
-		dbg_rst     : out std_logic;
-		dbg_lock    : out std_logic
+		rst_80	 	: out std_logic			-- 80MHz reset
 	);
 end usbrx_clkgen;
 
@@ -94,13 +89,7 @@ begin
 			ext_rst     => ext_rst,
 			pll_locked	=> pll_locked,
 			reset_pll	=> rst_pll,
-			reset_sys	=> reset_i,
-			
-		
-			-- debug
-			dbg_ext     => dbg_ext,
-			dbg_rst     => dbg_rst,
-			dbg_lock    => dbg_lock
+			reset_sys	=> reset_i
 		);
 	
 	-- sync reset to clock-domains

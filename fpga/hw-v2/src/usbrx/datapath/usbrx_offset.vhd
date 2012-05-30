@@ -54,25 +54,33 @@ architecture rtl of usbrx_offset is
 
 	-- clip & saturate sample
 	function doClipValue(x : signed) return signed is
+		variable xnorm : signed(x'length-1 downto 0) := x;
 	begin
-		if x >= 32768 then
+		if xnorm >= 32768 then
 			-- overflow
 			return to_signed(+32767,16);
-		elsif x < -32768 then
+		elsif xnorm < -32768 then
 			-- underflow
 			return to_signed(-32768,16);
 		else
 			-- in range
-			return x(15 downto 0);
+			return xnorm(15 downto 0);
 		end if;
 	end doClipValue;
+	
+	-- multiplier input
+	signal mula_i, mula_q : signed(17 downto 0) := (others=>'0');
+	signal mulb_i, mulb_q : signed(17 downto 0) := (others=>'0');
+	
+	-- multiplier output
+	signal mout_i, mout_q : signed(18 downto 0) := (others=>'0');
 	
 begin
 	
 	-- control logic
 	process(clk)
-		variable s16i, s16q : signed(15 downto 0);
-		variable s17i, s17q : signed(16 downto 0);
+		variable mtmp_i, mtmp_q : signed(35 downto 0);
+		variable atmp_i, atmp_q : signed(19 downto 0);
 	begin
 		if rising_edge(clk) then
 			-- passthough clock
@@ -80,17 +88,30 @@ begin
 			
 			-- handle data
 			if in_clk='1' then
-				-- convert input into 16bit signed
-				s16i := signed(in_i xor "10000000000000") & "00";
-				s16q := signed(in_q xor "10000000000000") & "00";
+				-- apply swap-flag & convert input into 18bit signed
+				if config.swap='0' then
+					mula_i <= signed(in_i xor "10000000000000") & "0000";
+					mula_q <= signed(in_q xor "10000000000000") & "0000";
+				else
+					mula_i <= signed(in_q xor "10000000000000") & "0000";
+					mula_q <= signed(in_i xor "10000000000000") & "0000";
+				end if;
 				
-				-- add offset
-				s17i := resize(s16i,17) + resize(config.ioff,17);
-				s17q := resize(s16q,17) + resize(config.qoff,17);
+				-- apply gain
+				mulb_i <= signed("00" & config.igain);
+				mulb_q <= signed("00" & config.qgain);
+				mtmp_i := mula_i * mulb_i;
+				mtmp_q := mula_q * mulb_q;
+				mout_i <= mtmp_i(34 downto 16);
+				mout_q <= mtmp_q(34 downto 16);
+				
+				-- add offset (also adds 0.5 for rounding of multiplier-output)
+				atmp_i := resize(mout_i,20) + resize(config.ioff&"1",20);
+				atmp_q := resize(mout_q,20) + resize(config.qoff&"1",20);
 				
 				-- clip output
-				out_i <= doClipValue(s17i);
-				out_q <= doClipValue(s17q);
+				out_i <= doClipValue(atmp_i(19 downto 1));
+				out_q <= doClipValue(atmp_q(19 downto 1));
 			end if;
 			
 			-- handle reset

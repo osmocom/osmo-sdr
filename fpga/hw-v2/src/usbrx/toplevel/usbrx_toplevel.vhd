@@ -71,6 +71,7 @@ entity usbrx_toplevel is
 		gps_10k  : in  std_logic;
 	
 		-- gpios
+		led      : inout std_logic;
 		gpio     : inout std_logic_vector(9 downto 0);
 		
 		-- virtual GNDs/VCCs
@@ -89,11 +90,16 @@ architecture rtl of usbrx_toplevel is
 	signal rst_80 : std_logic;
 	
 	-- config
-	signal cfg_pwm : usbrx_pwm_config_t;
-	signal cfg_adc : usbrx_adc_config_t;
-	signal cfg_ssc : usbrx_ssc_config_t;
-	signal cfg_fil : usbrx_fil_config_t;
-	signal cfg_off : usbrx_off_config_t;
+	signal cfg_pwm  : usbrx_pwm_config_t;
+	signal cfg_gpio : usbrx_gpio_config_t;
+	signal cfg_adc  : usbrx_adc_config_t;
+	signal cfg_ssc  : usbrx_ssc_config_t;
+	signal cfg_fil  : usbrx_fil_config_t;
+	signal cfg_off  : usbrx_off_config_t;
+	
+	-- status
+	signal stat_ref  : usbrx_ref_status_t;
+	signal stat_gpio : usbrx_gpio_status_t;
 	
 	-- ADC <-> offset
 	signal adc_off_clk : std_logic;
@@ -110,21 +116,8 @@ architecture rtl of usbrx_toplevel is
 	signal fil_out_i   : signed(15 downto 0);
 	signal fil_out_q   : signed(15 downto 0);
 	
-	-- blinken lights
-	signal blcnt1 : unsigned(31 downto 0) := x"00000000";
-	signal blcnt2 : unsigned(31 downto 0) := x"00000000";
-	signal blcnt3 : unsigned(31 downto 0) := x"00000000";
-	signal blink1 : std_logic := '0';
-	signal blink2 : std_logic := '0';
-	signal blink3 : std_logic := '0';
-	
 	-- enusure that signal-names are kept (important for timing contraints)
 	attribute syn_keep of clk_in_pclk : signal is true;
-	
-	-- debug
-	signal dbg_ext  : std_logic;
-	signal dbg_rst  : std_logic;
-	signal dbg_lock : std_logic;
 	
 begin
 	
@@ -139,12 +132,7 @@ begin
 			clk_30 => clk_30,
 			clk_80 => clk_80,
 			rst_30 => rst_30,
-			rst_80 => rst_80,
-			
-			-- debug
-			dbg_ext  => dbg_ext,
-			dbg_rst  => dbg_rst,
-			dbg_lock => dbg_lock
+			rst_80 => rst_80
 		);
 	
 	-- register bank
@@ -160,18 +148,53 @@ begin
 			cfg_ssc => cfg_ssc,
 			cfg_fil => cfg_fil,
 			cfg_off => cfg_off,
-			
-			-- status (TODO HACK)
-			adc_i   => adc_off_i,
-			adc_q   => adc_off_q,
+			cfg_gpio => cfg_gpio,
 		
+			-- status
+			stat_ref => stat_ref,
+			stat_gpio => stat_gpio,
+	
 			-- SPI interface
 			spi_ncs  => ctl_cs,
 			spi_sclk => ctl_sck,
 			spi_mosi => ctl_mosi,
 			spi_miso => ctl_miso
 		);
-	
+		
+	-- reference clock measurement
+	refclk: entity usbrx_clkref
+		port map (
+			-- system clocks
+			clk_sys  => clk_80,
+			rst_sys  => rst_80,
+			
+			-- reference signal
+			clk_ref  => clk_30,
+			rst_ref  => rst_30,
+			
+			-- 1pps signal
+			gps_1pps => gps_1pps,
+			
+			-- status
+			status   => stat_ref
+		);
+		
+	-- GPIOs
+	io: entity usbrx_gpio
+		port map (
+			-- common
+			clk    => clk_80,
+			reset  => rst_80,
+			
+			-- GPIOs
+			gpio(9 downto 0) => gpio,
+			gpio(10)         => led,
+			
+			-- config / status
+			config => cfg_gpio,
+			status => stat_gpio
+		);
+
 	-- gain PWMs
 	pwm: entity usbrx_pwm
 		port map (
@@ -273,53 +296,8 @@ begin
 			ssc_dat => rx_dat
 		);
 
-	-- TODO
+	-- drive unused IOs
 	ctl_int <= '1';
---	tx_clk  <= '0';
-	
-	-- blinken lights
-	process(clk_in_pclk)
-	begin
-		if rising_edge(clk_in_pclk) then
-			if blcnt1=0 then
-				blcnt1 <= to_unsigned(30000000/2-1, 32);
-				blink1 <= not blink1;
-			else
-				blcnt1 <= blcnt1-1;
-			end if;
-		end if;
-	end process;
-	process(clk_30)
-	begin
-		if rising_edge(clk_30) then
-			if rst_30='1' then
-				blcnt2 <= (others=>'0');
-				blink2 <= '0';
-			elsif blcnt2=0 then
-				blcnt2 <= to_unsigned(30000000/2-1, 32);
-				blink2 <= not blink2;
-			else
-				blcnt2 <= blcnt2-1;
-			end if;
-		end if;
-	end process;
-	process(clk_80)
-	begin
-		if rising_edge(clk_80) then
-			if rst_80='1' then
-				blcnt3 <= (others=>'0');
-				blink3 <= '0';
-			elsif blcnt3=0 then
-				blcnt3 <= to_unsigned(80000000/2-1, 32);
-				blink3 <= not blink3;
-			else
-				blcnt3 <= blcnt3-1;
-			end if;
-		end if;
-	end process;
-	
-	--             8        7        6         5         4          3        2        1 
-	gpio <= "00" & clk_80 & clk_30 & dbg_ext & dbg_rst & dbg_lock & blink3 & blink2 & blink1;
 	
 	-- virtual GNDs/VCCs
 	vgnd  <= (others=>'0');

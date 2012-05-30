@@ -35,12 +35,7 @@ entity mt_reset_gen is
 		ext_rst     : in  std_logic;	-- external reset
 		pll_locked	: in  std_logic;	-- PLLs locked?
 		reset_pll	: out std_logic;	-- reset signal for PLLs
-		reset_sys	: out std_logic;	-- global reset signal
-		
-		-- debug
-		dbg_ext     : out std_logic;
-		dbg_rst     : out std_logic;
-		dbg_lock    : out std_logic
+		reset_sys	: out std_logic		-- global reset signal
 	);
 end mt_reset_gen;
 
@@ -112,11 +107,6 @@ begin
 		
 	-- output PLL-reset
 	reset_pll <= reset_pll_i;
-	
-	-- debug
-	dbg_ext  <= ext_rst;
-	dbg_rst  <= reset_pll_i;
-	dbg_lock <= pll_locked;
 end;
 
 

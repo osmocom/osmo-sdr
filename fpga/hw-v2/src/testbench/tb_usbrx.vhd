@@ -95,11 +95,31 @@ begin
 	tx_dat <= '0';
 	
 	-- GPS
-	gps_1pps <= '0';
+--	gps_1pps <= '0';
 	gps_10k  <= '0';
 	
 	-- gpios
 	gpio <= (others=>'H');
+	
+	-- generate pps signal
+	-- (set every millisecond instead of every second
+	--  to speed to simulation time)
+	process
+		variable cnt : natural;
+	begin
+		gps_1pps <= '0';
+		
+		cnt := 1;
+		loop
+			wait for (cnt * 1 ms) - now;
+			gps_1pps <= '1';
+			wait for 1us;
+			gps_1pps <= '0';
+			cnt := cnt+1;
+		end loop;
+		
+		wait;
+	end process;
 	
 	-- dummy ADC model
 	process

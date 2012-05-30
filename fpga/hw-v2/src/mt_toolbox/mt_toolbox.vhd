@@ -72,9 +72,10 @@ package mt_toolbox is
 	--
 	-- common attributes
 	--
-	attribute syn_keep     : boolean;
-	attribute syn_ramstyle : string;
-	attribute syn_romstyle : string;
+	attribute syn_keep      : boolean;
+	attribute syn_ramstyle  : string;
+	attribute syn_romstyle  : string;
+	attribute shreg_extract : string;
 	
 end mt_toolbox;
 
