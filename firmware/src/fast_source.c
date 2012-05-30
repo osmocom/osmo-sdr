@@ -177,15 +177,18 @@ static void finalize_write(void *pArg, unsigned char status, unsigned int transf
 	switch(g_writeState.func) {
 		// general api
 		case FUNC(GROUP_GENERAL, 0x00): // init all
+			printf("general_init()");
 			res = 0; // no op so far
 			break;
 		case FUNC(GROUP_GENERAL, 0x01): // power down
+			printf("general_power_down()");
 			osdr_fpga_power(0);
 			sam3u_e4k_stby(&e4k, 1);
 			sam3u_e4k_power(&e4k, 0);
 			res = 0;
 			break;
 		case FUNC(GROUP_GENERAL, 0x02): // power up
+			printf("general_power_up()");
 			osdr_fpga_power(1);
 			sam3u_e4k_power(&e4k, 1);
 			sam3u_e4k_stby(&e4k, 0);
@@ -194,64 +197,84 @@ static void finalize_write(void *pArg, unsigned char status, unsigned int transf
 
 		// fpga commands
 		case FUNC(GROUP_FPGA_V2, 0x00): // fpga init
+			printf("fpga_v2_init()");
 			res = 0; // no op so far
 			break;
 		case FUNC(GROUP_FPGA_V2, 0x01):
+			printf("fpga_v2_reg_write()");
 			osdr_fpga_reg_write(g_writeState.data[0], read_bytewise32(g_writeState.data + 1));
 			res = 0;
 			break;
 
 		// si570 vcxo commands
 		case FUNC(GROUP_VCXO_SI570, 0x00): // si570_init()
+			printf("si570_init()");
 			res = si570_reinit(&si570);
 			break;
 		case FUNC(GROUP_VCXO_SI570, 0x01):
+			printf("si570_reg_write()");
 			res = si570_reg_write(&si570, g_writeState.data[0], g_writeState.data[1], g_writeState.data + 2);
 			break;
 		case FUNC(GROUP_VCXO_SI570, 0x02):
+			printf("si570_set_freq()");
 			res = si570_set_freq(&si570, read_bytewise32(g_writeState.data), read_bytewise32(g_writeState.data + 4));
 			break;
 
 		// e4000 tuner commands
 		case FUNC(GROUP_TUNER_E4K, 0x00):
+			printf("e4k_init()");
 			res = e4k_init(&e4k);
 			break;
 		case FUNC(GROUP_TUNER_E4K, 0x01): // reg write
+			printf("e4k_reg_write()");
+			res = -1;
 			break;
 		case FUNC(GROUP_TUNER_E4K, 0x02):
+			printf("e4k_if_gain_set()");
 			res = e4k_if_gain_set(&e4k, g_writeState.data[0], g_writeState.data[1]);
 			break;
 		case FUNC(GROUP_TUNER_E4K, 0x03):
+			printf("e4k_mixer_gain_set()");
 			res = e4k_mixer_gain_set(&e4k, g_writeState.data[0]);
 			break;
 		case FUNC(GROUP_TUNER_E4K, 0x04):
+			printf("e4K_commonmode_set()");
 			res = e4k_commonmode_set(&e4k, g_writeState.data[0]);
 			break;
 		case FUNC(GROUP_TUNER_E4K, 0x05):
+			printf("e4k_tune_freq()");
 			res = e4k_tune_freq(&e4k, read_bytewise32(g_writeState.data));
 			break;
 		case FUNC(GROUP_TUNER_E4K, 0x06):
+			printf("e4k_if_filter_bw_set()");
 			res = e4k_if_filter_bw_set(&e4k, g_writeState.data[0], read_bytewise32(g_writeState.data + 1));
 			break;
 		case FUNC(GROUP_TUNER_E4K, 0x07):
+			printf("e4k_if_filter_chan_enable()");
 			res = e4k_if_filter_chan_enable(&e4k, g_writeState.data[0]);
 			break;
 		case FUNC(GROUP_TUNER_E4K, 0x08):
+			printf("e4k_manual_dc_offset()");
 			res = e4k_manual_dc_offset(&e4k, g_writeState.data[0], g_writeState.data[1], g_writeState.data[2], g_writeState.data[3]);
 			break;
 		case FUNC(GROUP_TUNER_E4K, 0x09):
+			printf("e4k_dc_offset_calibrate()");
 			res = e4k_dc_offset_calibrate(&e4k);
 			break;
 		case FUNC(GROUP_TUNER_E4K, 0x0a):
+			printf("e4k_dc_offset_gen_table()");
 			res = e4k_dc_offset_gen_table(&e4k);
 			break;
 		case FUNC(GROUP_TUNER_E4K, 0x0b):
+			printf("e4k_set_lna_gain()");
 			res = e4k_set_lna_gain(&e4k, read_bytewise32(g_writeState.data));
 			break;
 		case FUNC(GROUP_TUNER_E4K, 0x0c):
+			printf("e4k_enable_manual_gain()");
 			res = e4k_enable_manual_gain(&e4k, g_writeState.data[0]);
 			break;
 		case FUNC(GROUP_TUNER_E4K, 0x0d):
+			printf("e4k_set_enh_gain()");
 			res = e4k_set_enh_gain(&e4k, read_bytewise32(g_writeState.data));
 			break;
 
