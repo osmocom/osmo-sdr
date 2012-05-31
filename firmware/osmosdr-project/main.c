@@ -439,8 +439,9 @@ int main(void)
 	e4k.vco.fosc = 30000000;
 
 	osdr_fpga_init(SSC_MCK);
-	osdr_fpga_reg_write(OSDR_FPGA_REG_ADC_TIMING, (1 << 8) | 255);
+	//osdr_fpga_reg_write(OSDR_FPGA_REG_ADC_TIMING, (1 << 8) | 255);
 	//osdr_fpga_reg_write(OSDR_FPGA_REG_PWM1, (1 << 400) | 800);
+	osdr_fpga_set_iq_swap(0);
 
 	ssc_init();
 
