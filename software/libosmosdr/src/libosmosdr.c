@@ -122,15 +122,23 @@ int e4k_exit(void *dev) { return 0; }
 int e4k_set_freq(void *dev, uint32_t freq) {
 	osmosdr_dev_t* devt = (osmosdr_dev_t*)dev;
 	uint8_t buffer[4];
+	int res;
 
 	buffer[0] = (uint8_t)(freq >> 24);
 	buffer[1] = (uint8_t)(freq >> 16);
 	buffer[2] = (uint8_t)(freq >> 8);
 	buffer[3] = (uint8_t)(freq >> 0);
 
-	return libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
+	res = libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
 				       FUNC(3, 5), 0,
 				       buffer, 4, CTRL_TIMEOUT);
+
+	if (res == 4) {
+		res = libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
+						       FUNC(3, 9), 0,
+						       NULL, 0, CTRL_TIMEOUT);
+	}
+	return res;
 }
 
 int e4k_set_bw(void *dev, int bw) { return 0; }
@@ -365,6 +373,65 @@ int osmosdr_set_tuner_gain_mode(osmosdr_dev_t *dev, int mode)
 	return r;
 }
 
+int osmosdr_set_tuner_lna_gain(osmosdr_dev_t *dev, int gain)
+{
+	osmosdr_dev_t* devt = (osmosdr_dev_t*)dev;
+	uint8_t buffer[4];
+
+	buffer[0] = (gain >> 24);
+	buffer[1] = (gain >> 16);
+	buffer[2] = (gain >> 8);
+	buffer[3] = (gain >> 0);
+
+	return libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
+				       FUNC(3, 0x0b), 0,
+				       buffer, 4, CTRL_TIMEOUT);
+}
+
+int osmosdr_set_tuner_mixer_gain(osmosdr_dev_t *dev, int gain)
+{
+	osmosdr_dev_t* devt = (osmosdr_dev_t*)dev;
+	uint8_t buffer[1];
+
+	buffer[0] = gain / 10;
+
+	return libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
+				       FUNC(3, 0x03), 0,
+				       buffer, 1, CTRL_TIMEOUT);
+}
+
+int osmosdr_set_tuner_mixer_enh(osmosdr_dev_t *dev, int enh)
+{
+	osmosdr_dev_t* devt = (osmosdr_dev_t*)dev;
+	uint8_t buffer[4];
+
+	buffer[0] = (enh >> 24);
+	buffer[1] = (enh >> 16);
+	buffer[2] = (enh >> 8);
+	buffer[3] = (enh >> 0);
+
+	return libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
+				       FUNC(3, 0x0d), 0,
+				       buffer, 4, CTRL_TIMEOUT);
+}
+
+int osmosdr_set_tuner_if_gain(osmosdr_dev_t *dev, int stage, int gain)
+{
+	osmosdr_dev_t* devt = (osmosdr_dev_t*)dev;
+	uint8_t buffer[5];
+
+	buffer[0] = stage;
+	gain /= 10;
+	buffer[1] = (gain >> 24);
+	buffer[2] = (gain >> 16);
+	buffer[3] = (gain >> 8);
+	buffer[4] = (gain >> 0);
+
+	return libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
+				       FUNC(3, 0x02), 0,
+				       buffer, 5, CTRL_TIMEOUT);
+}
+
 int osmosdr_set_sample_rate(osmosdr_dev_t *dev, uint32_t samp_rate)
 {
 	uint16_t r = 0;
@@ -394,6 +461,82 @@ uint32_t osmosdr_get_sample_rate(osmosdr_dev_t *dev)
 		return 0;
 
 	return dev->rate;
+}
+
+int osmosdr_set_fpga_reg(osmosdr_dev_t *dev, uint8_t reg, uint32_t value)
+{
+	osmosdr_dev_t* devt = (osmosdr_dev_t*)dev;
+	uint8_t buffer[5];
+
+	buffer[0] = reg;
+	buffer[1] = (uint8_t)(value >> 24);
+	buffer[2] = (uint8_t)(value >> 16);
+	buffer[3] = (uint8_t)(value >> 8);
+	buffer[4] = (uint8_t)(value >> 0);
+
+	return libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
+				       FUNC(1, 0x01), 0,
+				       buffer, 5, CTRL_TIMEOUT);
+}
+
+int osmosdr_set_fpga_decimation(osmosdr_dev_t *dev, int dec)
+{
+	osmosdr_dev_t* devt = (osmosdr_dev_t*)dev;
+	uint8_t buffer[1];
+
+	if((dec < 0) || (dec > 6))
+		return -1;
+
+	buffer[0] = dec;
+
+	return libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
+				       FUNC(1, 0x02), 0,
+				       buffer, 1, CTRL_TIMEOUT);
+}
+
+int osmosdr_set_fpga_iq_swap(osmosdr_dev_t *dev, int sw)
+{
+	osmosdr_dev_t* devt = (osmosdr_dev_t*)dev;
+	uint8_t buffer[1];
+
+	if((sw < 0) || (sw > 1))
+		return -1;
+
+	buffer[0] = sw;
+
+	return libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
+				       FUNC(1, 0x03), 0,
+				       buffer, 1, CTRL_TIMEOUT);
+}
+
+int osmosdr_set_fpga_iq_gain(osmosdr_dev_t *dev, uint16_t igain, uint16_t qgain)
+{
+	osmosdr_dev_t* devt = (osmosdr_dev_t*)dev;
+	uint8_t buffer[4];
+
+	buffer[0] = (uint8_t)(igain >> 8);
+	buffer[1] = (uint8_t)(igain >> 0);
+	buffer[2] = (uint8_t)(qgain >> 8);
+	buffer[3] = (uint8_t)(qgain >> 0);
+
+	return libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
+				       FUNC(1, 0x04), 0,
+				       buffer, 4, CTRL_TIMEOUT);
+}
+
+int osmosdr_set_fpga_iq_ofs(osmosdr_dev_t *dev, int16_t iofs, int16_t qofs)
+{
+	osmosdr_dev_t* devt = (osmosdr_dev_t*)dev;
+	uint8_t buffer[4];
+
+	buffer[0] = (uint8_t)(iofs >> 8);
+	buffer[1] = (uint8_t)(iofs >> 0);
+	buffer[2] = (uint8_t)(qofs >> 8);
+	buffer[3] = (uint8_t)(qofs >> 0);
+
+	return libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
+				       FUNC(1, 0x05), 0,
+				       buffer, 4, CTRL_TIMEOUT);
 }
 
 osmosdr_dongle_t *find_known_device(uint16_t vid, uint16_t pid)

@@ -141,6 +141,15 @@ OSMOSDR_API int osmosdr_get_tuner_gain(osmosdr_dev_t *dev);
  */
 OSMOSDR_API int osmosdr_set_tuner_gain_mode(osmosdr_dev_t *dev, int manual);
 
+/* set LNA gain in hdB */
+OSMOSDR_API int osmosdr_set_tuner_lna_gain(osmosdr_dev_t *dev, int gain);
+/* set mixer gain in hdB */
+OSMOSDR_API int osmosdr_set_tuner_mixer_gain(osmosdr_dev_t *dev, int gain);
+/* set mixer enhancement */
+OSMOSDR_API int osmosdr_set_tuner_mixer_enh(osmosdr_dev_t *dev, int enh);
+/* set IF stages gain */
+OSMOSDR_API int osmosdr_set_tuner_if_gain(osmosdr_dev_t *dev, int stage, int gain);
+
 /* this will select the baseband filters according to the requested sample rate */
 OSMOSDR_API int osmosdr_set_sample_rate(osmosdr_dev_t *dev, uint32_t rate);
 
@@ -151,6 +160,23 @@ OSMOSDR_API int osmosdr_set_sample_rate(osmosdr_dev_t *dev, uint32_t rate);
  * \return 0 on error, sample rate in Hz otherwise
  */
 OSMOSDR_API uint32_t osmosdr_get_sample_rate(osmosdr_dev_t *dev);
+
+/* this allows direct access to the FPGA register bank */
+OSMOSDR_API int osmosdr_set_fpga_reg(osmosdr_dev_t *dev, uint8_t reg, uint32_t value);
+
+/* more access to OsmoSDR functions */
+
+/* set decimation (0 = off, 1 = 1:2, 2 = 1:4, 3 = 1:8, ... 6 = 1:64) */
+OSMOSDR_API int osmosdr_set_fpga_decimation(osmosdr_dev_t *dev, int dec);
+
+/* set i/q swap / spectrum inversion (0 = off, 1 = on) */
+OSMOSDR_API int osmosdr_set_fpga_iq_swap(osmosdr_dev_t *dev, int sw);
+
+/* configure scaling of i and q channel (scaled_i = (orig_i * igain) / 32768) */
+OSMOSDR_API int osmosdr_set_fpga_iq_gain(osmosdr_dev_t *dev, uint16_t igain, uint16_t qgain);
+
+/* configure i and q offset correction (corrected_i = orig_i + iofs */
+OSMOSDR_API int osmosdr_set_fpga_iq_ofs(osmosdr_dev_t *dev, int16_t iofs, int16_t qofs);
 
 /* streaming functions */
 
