@@ -110,6 +110,11 @@ static uint32_t read_bytewise32(const uint8_t* data)
 	return (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3];
 }
 
+static uint16_t read_bytewise16(const uint8_t* data)
+{
+	return (data[0] << 8) | data[1];
+}
+
 typedef struct Request_ {
 	uint16_t func;
 	uint16_t len;
@@ -131,6 +136,10 @@ const static Request g_writeRequests[] = {
 	// fpga commands
 	{ FUNC(GROUP_FPGA_V2, 0x00), 0 }, // fpga init
 	{ FUNC(GROUP_FPGA_V2, 0x01), 5 }, // osdr_fpga_reg_write(uint8_t reg, uint32_t val)
+	{ FUNC(GROUP_FPGA_V2, 0x02), 1 }, // osdr_fpga_set_decimation(uint8_t val)
+	{ FUNC(GROUP_FPGA_V2, 0x03), 1 }, // osdr_fpga_set_iq_swap(uint8_t val)
+	{ FUNC(GROUP_FPGA_V2, 0x04), 4 }, // osdr_fpga_set_iq_gain(uint16_t igain, uint16_t qgain)
+	{ FUNC(GROUP_FPGA_V2, 0x05), 4 }, // osdr_fpga_set_iq_ofs(int16_t iofs, int16_t qofs)
 
 	// si570 vcxo commads
 	{ FUNC(GROUP_VCXO_SI570, 0x00), 0 }, // si570_init()
@@ -140,7 +149,7 @@ const static Request g_writeRequests[] = {
 	// e4000 tuner commands
 	{ FUNC(GROUP_TUNER_E4K, 0x00), 0 }, // e4k_init()
 	{ FUNC(GROUP_TUNER_E4K, 0x01), 0 }, // reg write
-	{ FUNC(GROUP_TUNER_E4K, 0x02), 2 }, // e4k_if_gain_set(uint8_t stage, int8_t value)
+	{ FUNC(GROUP_TUNER_E4K, 0x02), 5 }, // e4k_if_gain_set(uint8_t stage, int8_t value)
 	{ FUNC(GROUP_TUNER_E4K, 0x03), 1 }, // e4k_mixer_gain_set(struct e4k_state *e4k, int8_t value)
 	{ FUNC(GROUP_TUNER_E4K, 0x04), 1 }, // e4k_commonmode_set(int8_t value)
 	{ FUNC(GROUP_TUNER_E4K, 0x05), 4 }, // e4k_tune_freq(uint32_t freq)
@@ -205,6 +214,26 @@ static void finalize_write(void *pArg, unsigned char status, unsigned int transf
 			osdr_fpga_reg_write(g_writeState.data[0], read_bytewise32(g_writeState.data + 1));
 			res = 0;
 			break;
+		case FUNC(GROUP_FPGA_V2, 0x02):
+			printf("osdr_fpga_set_decimation()");
+			osdr_fpga_set_decimation(g_writeState.data[0]);
+			res = 0;
+			break;
+		case FUNC(GROUP_FPGA_V2, 0x03):
+			printf("osdr_fpga_set_iq_swap()");
+			osdr_fpga_set_iq_swap(g_writeState.data[0]);
+			res = 0;
+			break;
+		case FUNC(GROUP_FPGA_V2, 0x04):
+			printf("osdr_fpga_set_iq_gain()");
+			osdr_fpga_set_iq_gain(read_bytewise16(g_writeState.data), read_bytewise16(g_writeState.data + 2));
+			res = 0;
+			break;
+		case FUNC(GROUP_FPGA_V2, 0x05):
+			printf("osdr_fpga_set_iq_ofs()");
+			osdr_fpga_set_iq_ofs(read_bytewise16(g_writeState.data), read_bytewise16(g_writeState.data + 2));
+			res = 0;
+			break;
 
 		// si570 vcxo commands
 		case FUNC(GROUP_VCXO_SI570, 0x00): // si570_init()
@@ -231,7 +260,7 @@ static void finalize_write(void *pArg, unsigned char status, unsigned int transf
 			break;
 		case FUNC(GROUP_TUNER_E4K, 0x02):
 			printf("e4k_if_gain_set()");
-			res = e4k_if_gain_set(&e4k, g_writeState.data[0], g_writeState.data[1]);
+			res = e4k_if_gain_set(&e4k, g_writeState.data[0], read_bytewise32(g_writeState.data + 1));
 			break;
 		case FUNC(GROUP_TUNER_E4K, 0x03):
 			printf("e4k_mixer_gain_set()");
@@ -268,13 +297,16 @@ static void finalize_write(void *pArg, unsigned char status, unsigned int transf
 		case FUNC(GROUP_TUNER_E4K, 0x0b):
 			printf("e4k_set_lna_gain()");
 			res = e4k_set_lna_gain(&e4k, read_bytewise32(g_writeState.data));
+			if(res == -EINVAL)
+				res = -1;
+			else res = 0;
 			break;
 		case FUNC(GROUP_TUNER_E4K, 0x0c):
 			printf("e4k_enable_manual_gain()");
 			res = e4k_enable_manual_gain(&e4k, g_writeState.data[0]);
 			break;
 		case FUNC(GROUP_TUNER_E4K, 0x0d):
-			printf("e4k_set_enh_gain()");
+			printf("e4k_set_egain()");
 			res = e4k_set_enh_gain(&e4k, read_bytewise32(g_writeState.data));
 			break;
 
