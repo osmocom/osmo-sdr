@@ -106,6 +106,26 @@ void osdr_fpga_power(int on)
 		PIO_Clear(&fon_pin);
 }
 
+void osdr_fpga_set_decimation(uint8_t val)
+{
+	osdr_fpga_reg_write(OSDR_FPGA_REG_DECIMATION, val);
+}
+
+void osdr_fpga_set_iq_swap(uint8_t val)
+{
+	osdr_fpga_reg_write(OSDR_FPGA_REG_IQ_SWAP, (val & 1) ^ 1);
+}
+
+void osdr_fpga_set_iq_gain(uint16_t igain, uint16_t qgain)
+{
+	osdr_fpga_reg_write(OSDR_FPGA_REG_IQ_GAIN, ((uint32_t)igain) | (((uint32_t)qgain) << 16));
+}
+
+void osdr_fpga_set_iq_ofs(int16_t iofs, int16_t qofs)
+{
+	osdr_fpga_reg_write(OSDR_FPGA_REG_IQ_OFS, (((uint32_t)iofs) & 0xffff) | ((((uint32_t)qofs) << 16) & 0xffff0000));
+}
+
 
 /***********************************************************************
  * command integration
