@@ -306,7 +306,7 @@ static void finalize_write(void *pArg, unsigned char status, unsigned int transf
 			res = e4k_enable_manual_gain(&e4k, g_writeState.data[0]);
 			break;
 		case FUNC(GROUP_TUNER_E4K, 0x0d):
-			printf("e4k_set_egain()");
+			printf("e4k_set_enh_gain()");
 			res = e4k_set_enh_gain(&e4k, read_bytewise32(g_writeState.data));
 			break;
 
