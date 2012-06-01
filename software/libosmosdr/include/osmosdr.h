@@ -110,12 +110,26 @@ OSMOSDR_API int osmosdr_set_center_freq(osmosdr_dev_t *dev, uint32_t freq);
 OSMOSDR_API uint32_t osmosdr_get_center_freq(osmosdr_dev_t *dev);
 
 /*!
+ * Get a list of gains supported by the tuner.
+ *
+ * NOTE: The gains argument must be preallocated by the caller. If NULL is
+ * being given instead, the number of available gain values will be returned.
+ *
+ * \param dev the device handle given by osmosdr_open()
+ * \param gains array of gain values. In tenths of a dB, 115 means 11.5 dB.
+ * \return <= 0 on error, number of available (returned) gain values otherwise
+ */
+OSMOSDR_API int osmosdr_get_tuner_gains(osmosdr_dev_t *dev, int *gains);
+
+/*!
  * Set the gain for the device.
  * Manual gain mode must be enabled for this to work.
  *
  * Valid gain values (in tenths of a dB) for the E4000 tuner:
  * -10, 15, 40, 65, 90, 115, 140, 165, 190,
  * 215, 240, 290, 340, 420, 430, 450, 470, 490
+ *
+ * Valid gain values may be queried with \ref osmosdr_get_tuner_gains function.
  *
  * \param dev the device handle given by osmosdr_open()
  * \param gain in tenths of a dB, 115 means 11.5 dB.

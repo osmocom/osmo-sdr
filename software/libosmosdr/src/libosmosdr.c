@@ -332,6 +332,25 @@ uint32_t osmosdr_get_center_freq(osmosdr_dev_t *dev)
 	return dev->freq;
 }
 
+int osmosdr_get_tuner_gains(osmosdr_dev_t *dev, int *gains)
+{
+	const int e4k_gains[] = { -10, 15, 40, 65, 90, 115, 140, 165, 190, 215,
+				  240, 290, 340, 420, 430, 450, 470, 490 };
+	int len = sizeof(e4k_gains);
+
+	if (!dev)
+		return -1;
+
+	if (!gains) { /* no buffer provided, just return the count */
+		return len / sizeof(int);
+	} else {
+		if (len)
+			memcpy(gains, e4k_gains, len);
+
+		return len / sizeof(int);
+	}
+}
+
 int osmosdr_set_tuner_gain(osmosdr_dev_t *dev, int gain)
 {
 	int r = 0;

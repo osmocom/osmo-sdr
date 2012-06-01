@@ -108,6 +108,9 @@ int main(int argc, char **argv)
 	uint32_t out_block_size = DEFAULT_BUF_LENGTH;
 	int device_count;
 	char vendor[256] = { 0 }, product[256] = { 0 }, serial[256] = { 0 };
+	int count;
+	int gains[100];
+
 #ifndef _WIN32
 	while ((opt = getopt(argc, argv, "d:f:g:s:b:S::")) != -1) {
 		switch (opt) {
@@ -194,6 +197,13 @@ int main(int argc, char **argv)
 #else
 	SetConsoleCtrlHandler( (PHANDLER_ROUTINE) sighandler, TRUE );
 #endif
+	count = osmosdr_get_tuner_gains(dev, NULL);
+	fprintf(stderr, "Supported gain values (%d): ", count);
+
+	count = osmosdr_get_tuner_gains(dev, gains);
+	for (i = 0; i < count; i++)
+		fprintf(stderr, "%.1f ", gains[i] / 10.0);
+	fprintf(stderr, "\n");
 
 	r = osmosdr_get_usb_strings(dev, vendor, product, serial);
 	if (r < 0)
