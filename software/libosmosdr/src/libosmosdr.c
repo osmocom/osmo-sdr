@@ -624,6 +624,8 @@ const char *osmosdr_get_device_name(uint32_t index)
 
 			if (index == device_count - 1)
 				break;
+
+			device = NULL;
 		}
 	}
 
@@ -645,7 +647,6 @@ int osmosdr_get_device_usb_strings(uint32_t index, char *manufact,
 	libusb_context *ctx;
 	libusb_device **list;
 	struct libusb_device_descriptor dd;
-	osmosdr_dongle_t *device = NULL;
 	osmosdr_dev_t devt;
 	uint32_t device_count = 0;
 	ssize_t cnt;
@@ -657,22 +658,19 @@ int osmosdr_get_device_usb_strings(uint32_t index, char *manufact,
 	for (i = 0; i < cnt; i++) {
 		libusb_get_device_descriptor(list[i], &dd);
 
-		device = find_known_device(dd.idVendor, dd.idProduct);
-
-		if (device) {
+		if (find_known_device(dd.idVendor, dd.idProduct))
 			device_count++;
 
-			if (index == device_count - 1) {
-				r = libusb_open(list[i], &devt.devh);
-				if (!r) {
-					r = osmosdr_get_usb_strings(&devt,
-								    manufact,
-								    product,
-								    serial);
-					libusb_close(devt.devh);
-				}
-				break;
+		if (index == device_count - 1) {
+			r = libusb_open(list[i], &devt.devh);
+			if (!r) {
+				r = osmosdr_get_usb_strings(&devt,
+							    manufact,
+							    product,
+							    serial);
+				libusb_close(devt.devh);
 			}
+			break;
 		}
 	}
 
@@ -710,9 +708,8 @@ int osmosdr_open(osmosdr_dev_t **out_dev, uint32_t index)
 
 		libusb_get_device_descriptor(list[i], &dd);
 
-		if (find_known_device(dd.idVendor, dd.idProduct)) {
+		if (find_known_device(dd.idVendor, dd.idProduct))
 			device_count++;
-		}
 
 		if (index == device_count - 1)
 			break;
