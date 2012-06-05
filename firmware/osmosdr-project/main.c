@@ -452,6 +452,8 @@ int main(void)
 	osdr_fpga_set_iq_swap(0);
 
 	ssc_init();
+	e4k_init(&e4k);
+	e4k_init(&e4k);
 
     // Enter menu loop
     while (1) {
