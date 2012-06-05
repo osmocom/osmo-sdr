@@ -28,11 +28,11 @@
 #include "req_ctx.h"
 
 
-#define local_irq_save(x)	__disable_fault_irq()
-#define local_irq_restore(x)	__enable_fault_irq()
+#define local_irq_save(x)	do { __disable_fault_irq(); __disable_irq(); } while(0)
+#define local_irq_restore(x)	do { __enable_fault_irq(); __enable_irq(); } while(0)
 
-#define NUM_RCTX_SMALL 16
-#define NUM_RCTX_LARGE 2
+#define NUM_RCTX_SMALL 20
+#define NUM_RCTX_LARGE 0
 
 #define NUM_REQ_CTX	(NUM_RCTX_SMALL+NUM_RCTX_LARGE)
 
@@ -99,6 +99,7 @@ void req_ctx_init(void)
 	for (i = 0; i < NUM_RCTX_LARGE; i++) {
 		req_ctx[NUM_RCTX_SMALL+i].size = RCTX_SIZE_LARGE;
 		req_ctx[NUM_RCTX_SMALL+i].data = rctx_data_large[i];
+		req_ctx[NUM_RCTX_SMALL+i].state = RCTX_STATE_FREE;
 	}
 }
 
