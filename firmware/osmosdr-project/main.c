@@ -58,7 +58,7 @@
 #define SSC_MCK    49152000
 
 // TWI clock
-#define TWI_CLOCK       100000
+#define TWI_CLOCK       400000
 
 // PMC define
 #define AT91C_CKGR_PLLR     AT91C_CKGR_PLLAR
