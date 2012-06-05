@@ -588,3 +588,13 @@ void USBDDriverCallbacks_InterfaceSettingChanged(unsigned char interface,
 	else
 		LED_Set(USBD_LEDOTHER);
 }
+
+void fastsource_dump(void)
+{
+	struct req_ctx *rctx, *rctx2;
+
+	printf("usb pending:");
+	llist_for_each_entry_safe(rctx, rctx2, &usb_state.queue, list)
+		printf(" %02d", req_ctx_num(rctx));
+	printf("\n\r");
+}

@@ -277,7 +277,16 @@ static int cmd_ssc_stats(struct cmd_state *cs, enum cmd_op op,
 static int cmd_ssc_dump(struct cmd_state *cs, enum cmd_op op,
 			const char *cmd, int argc, char **argv)
 {
+	struct req_ctx *rctx, *rctx2;
+
 	dma_dump_regs();
+	req_ctx_dump();
+
+	printf("ssc pending:");
+	llist_for_each_entry_safe(rctx, rctx2, &ssc_state.pending_rctx, list)
+		printf(" %02d", req_ctx_num(rctx));
+	printf("\n\r");
+	fastsource_dump();
 }
 
 static struct cmd cmds[] = {

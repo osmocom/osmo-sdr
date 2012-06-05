@@ -16,3 +16,4 @@
 void fastsource_init(void);
 void fastsource_start(void);
 void fastsource_req_hdlr(const USBGenericRequest *request);
+void fastsource_dump(void);

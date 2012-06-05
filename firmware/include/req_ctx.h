@@ -50,4 +50,6 @@ extern uint8_t req_ctx_num(struct req_ctx *ctx);
 void req_ctx_enqueue(struct llist_head *list, struct req_ctx *rctx);
 struct req_ctx *req_ctx_dequeue(struct llist_head *list);
 
+void req_ctx_dump();
+
 #endif /* _REQ_CTX_H */

@@ -335,6 +335,12 @@ static int cmd_tuner_iqofs(struct cmd_state *cs, enum cmd_op op,
 	return e4k_manual_dc_offset(&e4k, iofs, irange, qofs, qrange);
 }
 
+static int cmd_tuner_dump(struct cmd_state *cs, enum cmd_op op,
+	const char *cmd, int argc, char ** argv)
+{
+	return e4k_dump(&e4k);
+}
+
 static int cmd_dfu(struct cmd_state *cs, enum cmd_op op,
                    const char *cmd, int argc, char ** argv)
 {
@@ -345,6 +351,8 @@ static int cmd_dfu(struct cmd_state *cs, enum cmd_op op,
 static struct cmd cmds[] = {
 	{ "tuner.init", CMD_OP_EXEC, cmd_tuner_init,
 	  "Initialize the tuner" },
+	{ "tuner.dump", CMD_OP_EXEC, cmd_tuner_dump,
+	  "Dump E4k registers" },
 	{ "tuner.freq", CMD_OP_SET|CMD_OP_GET, cmd_rf_freq,
 	  "Tune to the specified frequency" },
 	{ "tuner.gain", CMD_OP_SET, cmd_tuner_gain,

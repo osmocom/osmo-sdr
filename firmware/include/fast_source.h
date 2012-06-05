@@ -30,5 +30,6 @@ extern unsigned char fastsource_interfaces[3];
 
 void fastsource_init(void);
 void fastsource_start(void);
+void fastsource_dump(void);
 
 void usb_submit_req_ctx(struct req_ctx *rctx);

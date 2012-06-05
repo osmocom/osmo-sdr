@@ -129,3 +129,15 @@ void req_ctx_enqueue(struct llist_head *list, struct req_ctx *rctx)
 	llist_add_tail(&rctx->list, list);
 	local_irq_restore(flags);
 }
+
+void req_ctx_dump()
+{
+	int i;
+
+	local_irq_save(flags);
+	printf("ctx status: ");
+	for(i = 0; i < NUM_REQ_CTX; i++)
+		printf(" %02x", req_ctx[i].state);
+	local_irq_restore(flags);
+	printf("\n\r");
+}

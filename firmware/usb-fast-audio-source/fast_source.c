@@ -145,4 +145,11 @@ void fastsource_start(void)
 	USBD_Write(EP_NR, test_data, sizeof(test_data), wr_compl_cb, NULL);
 }
 
-
+void fastsource_dump(void)
+{
+	printf("usb pending: ");
+	printf("ssc pending:");
+	llist_for_each_entry_safe(rctx, rctx2, &ssc_state.pending_rctx, list)
+		printf(" %d", req_ctx_num(rctx));
+	printf("\r\n");
+}

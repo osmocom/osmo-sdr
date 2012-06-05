@@ -969,3 +969,16 @@ int e4k_init(struct e4k_state *e4k)
 
 	return 0;
 }
+
+int e4k_dump(struct e4k_state *e4k)
+{
+	int i;
+
+	for(i = 0; i < 64; i++)
+		printf("0x%02x: 0x%02x    0x%02x: 0x%02x    0x%02x: 0x%02x    0x%02x: 0x%02x\n\r",
+			i, e4k_reg_read(e4k, i),
+			i + 64, e4k_reg_read(e4k, i + 64),
+			i + 128, e4k_reg_read(e4k, i + 128),
+			i + 192, e4k_reg_read(e4k, i + 192)
+	);
+}
