@@ -327,14 +327,14 @@ static void handle_osmosdr_write(const USBGenericRequest* request)
 	uint16_t func = USBGenericRequest_GetValue(request);
 	int len = USBGenericRequest_GetLength(request);
 	int i;
-
+/*
 	printf("OsmoSDR SET request: type:%d, request:%d, value:%04x, index: %04x, length: %d\n\r",
 		USBGenericRequest_GetType(request),
 		USBGenericRequest_GetRequest(request),
 		USBGenericRequest_GetValue(request),
 		USBGenericRequest_GetIndex(request),
 		len);
-
+*/
 	for(i = 0; i < ARRAY_SIZE(g_writeRequests); i++) {
 		if(g_writeRequests[i].func == func)
 			break;
