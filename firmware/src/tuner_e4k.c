@@ -981,4 +981,5 @@ int e4k_dump(struct e4k_state *e4k)
 			i + 128, e4k_reg_read(e4k, i + 128),
 			i + 192, e4k_reg_read(e4k, i + 192)
 	);
+	return 0;
 }
