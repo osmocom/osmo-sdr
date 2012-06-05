@@ -110,6 +110,7 @@ int main(int argc, char **argv)
 	char vendor[256] = { 0 }, product[256] = { 0 }, serial[256] = { 0 };
 	int count;
 	int gains[100];
+	uint32_t rates[100];
 
 #ifndef _WIN32
 	while ((opt = getopt(argc, argv, "d:f:g:s:b:S::")) != -1) {
@@ -205,6 +206,14 @@ int main(int argc, char **argv)
 		fprintf(stderr, "%.1f ", gains[i] / 10.0);
 	fprintf(stderr, "\n");
 
+	count = osmosdr_get_sample_rates(dev, NULL);
+	fprintf(stderr, "Supported sample rates (%d): ", count);
+
+	count = osmosdr_get_sample_rates(dev, rates);
+	for (i = 0; i < count; i++)
+		fprintf(stderr, "%u ", rates[i]);
+	fprintf(stderr, "\n");
+
 	r = osmosdr_get_usb_strings(dev, vendor, product, serial);
 	if (r < 0)
 		fprintf(stderr, "WARNING: Failed to read usb strings.\n");
@@ -215,6 +224,10 @@ int main(int argc, char **argv)
 	r = osmosdr_set_sample_rate(dev, samp_rate);
 	if (r < 0)
 		fprintf(stderr, "WARNING: Failed to set sample rate.\n");
+	else {
+		samp_rate = osmosdr_get_sample_rate(dev);
+		fprintf(stderr, "Sample rate is set to %u Hz.\n", samp_rate);
+	}
 
 	/* Set the frequency */
 	r = osmosdr_set_center_freq(dev, frequency);

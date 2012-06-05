@@ -55,30 +55,6 @@ OSMOSDR_API int osmosdr_close(osmosdr_dev_t *dev);
 /* configuration functions */
 
 /*!
- * Set clock frequencies used for the ADC and the tuner ICs.
- *
- * NOTE: Call this function only if you know what you are doing.
- *
- * \param dev the device handle given by osmosdr_open()
- * \param adc_clock frequency value used to clock the ADC in Hz
- * \param tun_clock frequency value used to clock the tuner IC in Hz
- * \return 0 on success
- */
-OSMOSDR_API int osmosdr_set_clock_freq(osmosdr_dev_t *dev, uint32_t adc_clock,
-					uint32_t tun_clock);
-
-/*!
- * Get clock frequencies used for the ADC and the tuner IC.
- *
- * \param dev the device handle given by osmosdr_open()
- * \param adc_clock frequency value used to clock the ADC in Hz
- * \param tun_clock frequency value used to clock the tuner IC in Hz
- * \return 0 on success
- */
-OSMOSDR_API int osmosdr_get_clock_freq(osmosdr_dev_t *dev, uint32_t *adc_clock,
-					uint32_t *tun_clock);
-
-/*!
  * Get USB device strings.
  *
  * NOTE: The string arguments must provide space for up to 256 bytes.
@@ -164,11 +140,29 @@ OSMOSDR_API int osmosdr_set_tuner_mixer_enh(osmosdr_dev_t *dev, int enh);
 /* set IF stages gain */
 OSMOSDR_API int osmosdr_set_tuner_if_gain(osmosdr_dev_t *dev, int stage, int gain);
 
-/* this will select the baseband filters according to the requested sample rate */
+/*!
+ * Get a list of sample rates supported by the device.
+ *
+ * NOTE: The rates argument must be preallocated by the caller. If NULL is
+ * being given instead, the number of available rate values will be returned.
+ *
+ * \param dev the device handle given by osmosdr_open()
+ * \param rates array of rate values in Hz
+ * \return <= 0 on error, number of available (returned) rate values otherwise
+ */
+OSMOSDR_API uint32_t osmosdr_get_sample_rates(osmosdr_dev_t *dev, uint32_t *rates);
+
+/*!
+ * Set the sample rate for the device.
+ *
+ * \param dev the device handle given by osmosdr_open()
+ * \param rate the sample rate in Hz
+ * \return 0 on success
+ */
 OSMOSDR_API int osmosdr_set_sample_rate(osmosdr_dev_t *dev, uint32_t rate);
 
 /*!
- * Get actual sample rate the device is configured to.
+ * Get the sample rate the device is configured to.
  *
  * \param dev the device handle given by osmosdr_open()
  * \return 0 on error, sample rate in Hz otherwise

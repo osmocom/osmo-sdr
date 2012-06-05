@@ -72,7 +72,6 @@ struct osmosdr_dev {
 	uint32_t adc_clock; /* Hz */
 	/* tuner context */
 	osmosdr_tuner_t *tuner;
-	uint32_t tun_clock; /* Hz */
 	uint32_t freq; /* Hz */
 	int gain; /* dB */
 };
@@ -91,17 +90,7 @@ static osmosdr_dongle_t known_devices[] = {
 #define DEFAULT_BUF_NUMBER	32
 #define DEFAULT_BUF_LENGTH	(16 * 32 * 512)
 
-// TODO: change the constants according to the limits imposed by the hardware
-
-#define DEF_ADC_FREQ	28800000
-#define MIN_ADC_FREQ	(DEF_ADC_FREQ - 1000)
-#define MAX_ADC_FREQ	(DEF_ADC_FREQ + 1000)
-
-#define DEF_E4K_FREQ	28800000
-#define MIN_E4K_FREQ	(DEF_E4K_FREQ - 1000)
-#define MAX_E4K_FREQ	(DEF_E4K_FREQ + 1000)
-
-#define MAX_SAMP_RATE	3200000
+#define DEF_ADC_FREQ	4000000
 
 #define CTRL_IN		(LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_ENDPOINT_IN)
 #define CTRL_OUT	(LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_ENDPOINT_OUT)
@@ -212,57 +201,6 @@ static osmosdr_tuner_t tuner = {
 	e4k_set_bw, e4k_set_gain, e4k_set_gain_mode
 };
 
-int osmosdr_set_xtal_freq(osmosdr_dev_t *dev, uint32_t adc_clock, uint32_t tun_clock)
-{
-	int r = 0;
-
-	if (!dev)
-		return -1;
-
-	if (adc_clock > 0 &&
-		(adc_clock < MIN_ADC_FREQ || adc_clock > MAX_ADC_FREQ))
-		return -2;
-
-	if (dev->adc_clock != adc_clock) {
-		if (0 == adc_clock)
-			adc_clock = DEF_ADC_FREQ;
-
-		dev->adc_clock = adc_clock;
-
-		/* update xtal-dependent settings */
-		if (dev->rate)
-			r = osmosdr_set_sample_rate(dev, dev->rate);
-	}
-
-	if (dev->tun_clock != tun_clock) {
-		if (0 == tun_clock)
-			tun_clock = dev->adc_clock;
-
-		dev->tun_clock = tun_clock;
-
-		/* update xtal-dependent settings */
-		if (dev->freq)
-			r = osmosdr_set_center_freq(dev, dev->freq);
-	}
-
-	return r;
-}
-
-int osmosdr_get_xtal_freq(osmosdr_dev_t *dev, uint32_t *adc_clock, uint32_t *tun_clock)
-{
-	if (!dev)
-		return -1;
-
-	*adc_clock = dev->adc_clock;
-
-	if (!dev->tuner)
-		return -2;
-
-	*tun_clock = dev->tun_clock;
-
-	return 0;
-}
-
 int osmosdr_get_usb_strings(osmosdr_dev_t *dev, char *manufact, char *product,
 			    char *serial)
 {
@@ -312,9 +250,8 @@ int osmosdr_set_center_freq(osmosdr_dev_t *dev, uint32_t freq)
 	if (!dev || !dev->tuner)
 		return -1;
 
-	if (dev->tuner->set_freq) {
+	if (dev->tuner->set_freq)
 		r = dev->tuner->set_freq(dev, freq);
-	}
 
 	if (!r)
 		dev->freq = freq;
@@ -358,9 +295,8 @@ int osmosdr_set_tuner_gain(osmosdr_dev_t *dev, int gain)
 	if (!dev || !dev->tuner)
 		return -1;
 
-	if (dev->tuner->set_gain) {
+	if (dev->tuner->set_gain)
 		r = dev->tuner->set_gain((void *)dev, gain);
-	}
 
 	if (!r)
 		dev->gain = gain;
@@ -385,9 +321,8 @@ int osmosdr_set_tuner_gain_mode(osmosdr_dev_t *dev, int mode)
 	if (!dev || !dev->tuner)
 		return -1;
 
-	if (dev->tuner->set_gain_mode) {
+	if (dev->tuner->set_gain_mode)
 		r = dev->tuner->set_gain_mode((void *)dev, mode);
-	}
 
 	return r;
 }
@@ -451,27 +386,61 @@ int osmosdr_set_tuner_if_gain(osmosdr_dev_t *dev, int stage, int gain)
 				       buffer, 5, CTRL_TIMEOUT);
 }
 
-int osmosdr_set_sample_rate(osmosdr_dev_t *dev, uint32_t samp_rate)
+/* two raised to the power of n */
+#define TWO_POW(n)		(1ULL<<(n))
+
+uint32_t osmosdr_get_sample_rates(osmosdr_dev_t *dev, uint32_t *rates)
 {
-	uint16_t r = 0;
+	int n;
 
 	if (!dev)
 		return -1;
 
-	/* check for the maximum rate the resampler supports */
-	if (samp_rate > MAX_SAMP_RATE)
-		samp_rate = MAX_SAMP_RATE;
+	if (!rates) { /* no buffer provided, just return the count */
+		return 5;
+	} else {
+		for (n = 6; n > 1; n--) /* 64 to 4 */
+			*(rates++) = dev->adc_clock / TWO_POW(n);
 
-	if (dev->tuner && dev->tuner->set_bw) {
-		dev->tuner->set_bw(dev, samp_rate);
+		return 5;
 	}
 
-	if (!r)
-		dev->rate = samp_rate;
-	else
-		dev->rate = 0;
-
 	return 0;
+}
+
+int osmosdr_set_sample_rate(osmosdr_dev_t *dev, uint32_t samp_rate)
+{
+	int n, decim = 3;
+	int r = 0;
+	unsigned int req_decim = 0;
+
+	if (!dev)
+		return -1;
+
+	/* TODO: implement arbitrary rates by steering the master clock */
+
+	req_decim = dev->adc_clock / samp_rate;
+
+	for (n = 2; n <= 6; n++) { /* 4 to 64 */
+		if (TWO_POW(n) == req_decim) {
+			decim = n;
+			break;
+		}
+	}
+
+	samp_rate = dev->adc_clock / TWO_POW(decim);
+
+	r = osmosdr_set_fpga_decimation(dev, decim);
+	if (!r) {
+		if (dev->tuner && dev->tuner->set_bw)
+			dev->tuner->set_bw(dev, samp_rate);
+
+		dev->rate = samp_rate;
+	} else {
+		dev->rate = 0;
+	}
+
+	return r;
 }
 
 uint32_t osmosdr_get_sample_rate(osmosdr_dev_t *dev)
@@ -739,14 +708,10 @@ int osmosdr_open(osmosdr_dev_t **out_dev, uint32_t index)
 
 	dev->adc_clock = DEF_ADC_FREQ;
 
-	/* TODO: osmosdr_init_baseband(dev); */
-
 	dev->tuner = &tuner; /* so far we support only one tuner */
 
 found:
 	if (dev->tuner) {
-		dev->tun_clock = dev->adc_clock;
-
 		if (dev->tuner->init) {
 			r = dev->tuner->init(dev);
 		}
@@ -770,8 +735,6 @@ int osmosdr_close(osmosdr_dev_t *dev)
 {
 	if (!dev)
 		return -1;
-
-	/* TODO: osmosdr_deinit_baseband(dev); */
 
 	libusb_release_interface(dev->devh, 0);
 	libusb_close(dev->devh);
