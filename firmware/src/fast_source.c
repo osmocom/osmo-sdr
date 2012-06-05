@@ -489,10 +489,8 @@ void fastsource_start(void)
 	if(USBD_GetState() != USBD_STATE_CONFIGURED)
 		return;
 
-	if (!usb_state.active) {
-		usb_state.active = 1;
+	if (!usb_state.active)
 		refill_dma();
-	}
 }
 
 /* Use every Nth sample for computing statistics.  At fpga.adc_clkdiv=2 we can
