@@ -27,6 +27,10 @@ dnl checks for header files
 AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/types.h)
 
+# pc variables
+AC_SUBST(OSMOSDR_PC_LIBS,["$LIBS"])
+AC_SUBST(OSMOSDR_PC_CFLAGS,["$CFLAGS"])
+
 # The following test is taken from WebKit's webkit.m4
 saved_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -fvisibility=hidden "
