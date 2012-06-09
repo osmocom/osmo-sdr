@@ -101,9 +101,13 @@ static osmosdr_dongle_t known_devices[] = {
 
 int e4k_init(void *dev) {
 	osmosdr_dev_t* devt = (osmosdr_dev_t*)dev;
-	return libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
-				       FUNC(3, 0), 0,
-				       NULL, 0, CTRL_TIMEOUT);
+	int res;
+
+	res = libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
+				      FUNC(3, 0), 0,
+				      NULL, 0, CTRL_TIMEOUT);
+
+	return res; /* 0 is success since we do not send any buffers out */
 }
 
 int e4k_exit(void *dev) { return 0; }
@@ -119,14 +123,15 @@ int e4k_set_freq(void *dev, uint32_t freq) {
 	buffer[3] = (uint8_t)(freq >> 0);
 
 	res = libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
-				       FUNC(3, 5), 0,
-				       buffer, 4, CTRL_TIMEOUT);
+				      FUNC(3, 5), 0,
+				      buffer, sizeof(buffer), CTRL_TIMEOUT);
 
-	if (res == 4) {
+	if (res == sizeof(buffer)) {
 		res = libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
-						       FUNC(3, 9), 0,
-						       NULL, 0, CTRL_TIMEOUT);
+					      FUNC(3, 9), 0,
+					      NULL, 0, CTRL_TIMEOUT);
 	}
+
 	return res;
 }
 
@@ -135,51 +140,69 @@ int e4k_set_bw(void *dev, int bw) { return 0; }
 int e4k_set_lna_gain(void *dev, int32_t gain) {
 	osmosdr_dev_t* devt = (osmosdr_dev_t*)dev;
 	uint8_t buffer[4];
+	int res;
 
 	buffer[0] = (uint8_t)(gain >> 24);
 	buffer[1] = (uint8_t)(gain >> 16);
 	buffer[2] = (uint8_t)(gain >> 8);
 	buffer[3] = (uint8_t)(gain >> 0);
 
-	return libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
-				       FUNC(3, 0x0b), 0,
-				       buffer, 4, CTRL_TIMEOUT);
+	res = libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
+				      FUNC(3, 0x0b), 0,
+				      buffer, sizeof(buffer), CTRL_TIMEOUT);
+
+	if (res == sizeof(buffer))
+		res = 0;
+
+	return res;
 }
 
 int e4k_mixer_gain_set(void *dev, int8_t gain) {
 	osmosdr_dev_t* devt = (osmosdr_dev_t*)dev;
 	uint8_t buffer[1];
+	int res;
 
 	buffer[0] = gain;
 
-	return libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
-				       FUNC(3, 0x03), 0,
-				       buffer, 1, CTRL_TIMEOUT);
+	res = libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
+				      FUNC(3, 0x03), 0,
+				      buffer, sizeof(buffer), CTRL_TIMEOUT);
+
+	if (res == sizeof(buffer))
+		res = 0;
+
+	return res;
 }
 
 int e4k_set_enh_gain(void *dev, int32_t gain) {
 	osmosdr_dev_t* devt = (osmosdr_dev_t*)dev;
 	uint8_t buffer[4];
+	int res;
 
 	buffer[0] = (uint8_t)(gain >> 24);
 	buffer[1] = (uint8_t)(gain >> 16);
 	buffer[2] = (uint8_t)(gain >> 8);
 	buffer[3] = (uint8_t)(gain >> 0);
 
-	return libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
-				       FUNC(3, 0x0d), 0,
-				       buffer, 4, CTRL_TIMEOUT);
+	res = libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
+				      FUNC(3, 0x0d), 0,
+				      buffer, sizeof(buffer), CTRL_TIMEOUT);
+
+	if (res == sizeof(buffer))
+		res = 0;
+
+	return res;
 }
 
 int e4k_set_gain(void *dev, int gain) {
 	int8_t mixgain = (gain > 340) ? 12 : 4;
 	int enhgain = (gain - 420);
-	if(e4k_set_lna_gain(dev, min(300, gain - 40)) == -EINVAL)
+	if(e4k_set_lna_gain(dev, min(300, gain - 40)))
 		return -1;
-	if(e4k_mixer_gain_set(dev, mixgain) == -EINVAL)
+	if(e4k_mixer_gain_set(dev, mixgain))
 		return -1;
 	if(enhgain >= 0)
-		if(e4k_set_enh_gain(dev, enhgain) == -EINVAL)
+		if(e4k_set_enh_gain(dev, enhgain))
 			return -1;
 	return 0;
 }
@@ -187,12 +210,18 @@ int e4k_set_gain(void *dev, int gain) {
 int e4k_set_gain_mode(void *dev, int manual) {
 	osmosdr_dev_t* devt = (osmosdr_dev_t*)dev;
 	uint8_t buffer[1];
+	int res;
 
 	buffer[0] = (uint8_t)manual;
 
-	return libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
-				       FUNC(3, 0x0c), 0,
-				       buffer, 1, CTRL_TIMEOUT);
+	res = libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
+				      FUNC(3, 0x0c), 0,
+				      buffer, sizeof(buffer), CTRL_TIMEOUT);
+
+	if (res == sizeof(buffer))
+		res = 0;
+
+	return res;
 }
 
 static osmosdr_tuner_t tuner = {
@@ -244,8 +273,7 @@ int osmosdr_get_usb_strings(osmosdr_dev_t *dev, char *manufact, char *product,
 
 int osmosdr_set_center_freq(osmosdr_dev_t *dev, uint32_t freq)
 {
-	int r = -1;
-	double f = (double) freq;
+	int r = -2;
 
 	if (!dev || !dev->tuner)
 		return -1;
@@ -290,7 +318,7 @@ int osmosdr_get_tuner_gains(osmosdr_dev_t *dev, int *gains)
 
 int osmosdr_set_tuner_gain(osmosdr_dev_t *dev, int gain)
 {
-	int r = 0;
+	int r = -2;
 
 	if (!dev || !dev->tuner)
 		return -1;
@@ -316,7 +344,7 @@ int osmosdr_get_tuner_gain(osmosdr_dev_t *dev)
 
 int osmosdr_set_tuner_gain_mode(osmosdr_dev_t *dev, int mode)
 {
-	int r = 0;
+	int r = -2;
 
 	if (!dev || !dev->tuner)
 		return -1;
@@ -339,7 +367,7 @@ int osmosdr_set_tuner_lna_gain(osmosdr_dev_t *dev, int gain)
 
 	return libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
 				       FUNC(3, 0x0b), 0,
-				       buffer, 4, CTRL_TIMEOUT);
+				       buffer, sizeof(buffer), CTRL_TIMEOUT);
 }
 
 int osmosdr_set_tuner_mixer_gain(osmosdr_dev_t *dev, int gain)
@@ -351,7 +379,7 @@ int osmosdr_set_tuner_mixer_gain(osmosdr_dev_t *dev, int gain)
 
 	return libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
 				       FUNC(3, 0x03), 0,
-				       buffer, 1, CTRL_TIMEOUT);
+				       buffer, sizeof(buffer), CTRL_TIMEOUT);
 }
 
 int osmosdr_set_tuner_mixer_enh(osmosdr_dev_t *dev, int enh)
@@ -366,7 +394,7 @@ int osmosdr_set_tuner_mixer_enh(osmosdr_dev_t *dev, int enh)
 
 	return libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
 				       FUNC(3, 0x0d), 0,
-				       buffer, 4, CTRL_TIMEOUT);
+				       buffer, sizeof(buffer), CTRL_TIMEOUT);
 }
 
 int osmosdr_set_tuner_if_gain(osmosdr_dev_t *dev, int stage, int gain)
@@ -383,7 +411,7 @@ int osmosdr_set_tuner_if_gain(osmosdr_dev_t *dev, int stage, int gain)
 
 	return libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
 				       FUNC(3, 0x02), 0,
-				       buffer, 5, CTRL_TIMEOUT);
+				       buffer, sizeof(buffer), CTRL_TIMEOUT);
 }
 
 /* two raised to the power of n */
@@ -431,7 +459,7 @@ int osmosdr_set_sample_rate(osmosdr_dev_t *dev, uint32_t samp_rate)
 	samp_rate = dev->adc_clock / TWO_POW(decim);
 
 	r = osmosdr_set_fpga_decimation(dev, decim);
-	if (!r) {
+	if (r >= 0) {
 		if (dev->tuner && dev->tuner->set_bw)
 			dev->tuner->set_bw(dev, samp_rate);
 
@@ -464,7 +492,7 @@ int osmosdr_set_fpga_reg(osmosdr_dev_t *dev, uint8_t reg, uint32_t value)
 
 	return libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
 				       FUNC(1, 0x01), 0,
-				       buffer, 5, CTRL_TIMEOUT);
+				       buffer, sizeof(buffer), CTRL_TIMEOUT);
 }
 
 int osmosdr_set_fpga_decimation(osmosdr_dev_t *dev, int dec)
@@ -479,7 +507,7 @@ int osmosdr_set_fpga_decimation(osmosdr_dev_t *dev, int dec)
 
 	return libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
 				       FUNC(1, 0x02), 0,
-				       buffer, 1, CTRL_TIMEOUT);
+				       buffer, sizeof(buffer), CTRL_TIMEOUT);
 }
 
 int osmosdr_set_fpga_iq_swap(osmosdr_dev_t *dev, int sw)
@@ -494,7 +522,7 @@ int osmosdr_set_fpga_iq_swap(osmosdr_dev_t *dev, int sw)
 
 	return libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
 				       FUNC(1, 0x03), 0,
-				       buffer, 1, CTRL_TIMEOUT);
+				       buffer, sizeof(buffer), CTRL_TIMEOUT);
 }
 
 int osmosdr_set_fpga_iq_gain(osmosdr_dev_t *dev, uint16_t igain, uint16_t qgain)
@@ -509,7 +537,7 @@ int osmosdr_set_fpga_iq_gain(osmosdr_dev_t *dev, uint16_t igain, uint16_t qgain)
 
 	return libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
 				       FUNC(1, 0x04), 0,
-				       buffer, 4, CTRL_TIMEOUT);
+				       buffer, sizeof(buffer), CTRL_TIMEOUT);
 }
 
 int osmosdr_set_fpga_iq_ofs(osmosdr_dev_t *dev, int16_t iofs, int16_t qofs)
@@ -524,7 +552,7 @@ int osmosdr_set_fpga_iq_ofs(osmosdr_dev_t *dev, int16_t iofs, int16_t qofs)
 
 	return libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
 				       FUNC(1, 0x05), 0,
-				       buffer, 4, CTRL_TIMEOUT);
+				       buffer, sizeof(buffer), CTRL_TIMEOUT);
 }
 
 osmosdr_dongle_t *find_known_device(uint16_t vid, uint16_t pid)
@@ -659,7 +687,6 @@ int osmosdr_open(osmosdr_dev_t **out_dev, uint32_t index)
 	libusb_device *device = NULL;
 	uint32_t device_count = 0;
 	struct libusb_device_descriptor dd;
-	uint8_t reg;
 	ssize_t cnt;
 
 	dev = malloc(sizeof(osmosdr_dev_t));
@@ -708,13 +735,10 @@ int osmosdr_open(osmosdr_dev_t **out_dev, uint32_t index)
 
 	dev->adc_clock = DEF_ADC_FREQ;
 
-	dev->tuner = &tuner; /* so far we support only one tuner */
+	dev->tuner = &tuner; /* so far we have only one tuner */
 
-found:
-	if (dev->tuner) {
-		if (dev->tuner->init) {
-			r = dev->tuner->init(dev);
-		}
+	if (dev->tuner->init) {
+		r = dev->tuner->init(dev);
 	}
 
 	*out_dev = dev;
