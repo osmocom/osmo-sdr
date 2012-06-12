@@ -555,7 +555,7 @@ int osmosdr_set_fpga_iq_ofs(osmosdr_dev_t *dev, int16_t iofs, int16_t qofs)
 				       buffer, sizeof(buffer), CTRL_TIMEOUT);
 }
 
-osmosdr_dongle_t *find_known_device(uint16_t vid, uint16_t pid)
+static osmosdr_dongle_t *find_known_device(uint16_t vid, uint16_t pid)
 {
 	unsigned int i;
 	osmosdr_dongle_t *device = NULL;
