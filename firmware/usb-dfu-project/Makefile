@@ -69,6 +69,10 @@ include $(AT91LIB)/boards/$(BOARD)/board.mak
 BIN = bin
 OBJ = obj
 
+GIT_REVISION := $(shell ../../git-version-gen ../../.tarball_version)
+ASFLAGS += -DGIT_REVISION=\"$(GIT_REVISION)\"
+CFLAGS += -DGIT_REVISION=\"$(GIT_REVISION)\"
+
 #-------------------------------------------------------------------------------
 #		Tools
 #-------------------------------------------------------------------------------

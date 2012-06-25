@@ -424,8 +424,7 @@ int main(void)
     TWI_ConfigureMaster(AT91C_BASE_TWI0, TWI_CLOCK, SSC_MCK);
     TWID_Initialize(&twid, AT91C_BASE_TWI0);
 
-    printf("-- osmo-sdr project %s --\n\r", SOFTPACK_VERSION);
-    printf("-- %s\n\r", BOARD_NAME);
+    printf("-- OsmoSDR firmware (" BOARD_NAME ") " GIT_REVISION " --\n\r");
     printf("-- Compiled: %s %s --\n\r", __DATE__, __TIME__);
 
 	req_ctx_init();

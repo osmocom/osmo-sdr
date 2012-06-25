@@ -446,9 +446,8 @@ int main(void)
 
     TRACE_CONFIGURE(DBGU_STANDARD, 115200, BOARD_MCK);
 
-//    printf("-- USB DFU Test %s --\n\r", SOFTPACK_VERSION);
-    printf("-- %s\n\r", BOARD_NAME);
-//    printf("-- Compiled: %s %s --\n\r", __DATE__, __TIME__);
+    printf("-- Osmocom USB DFU (" BOARD_NAME ") " GIT_REVISION " --\n\r");
+    printf("-- Compiled: %s %s --\n\r", __DATE__, __TIME__);
 
     rst_type = (RSTC_GetStatus() >> 8) & 0x7;
     //printf("-- Reset type: %s --\n\r", rst_type_strs[rst_type]);
