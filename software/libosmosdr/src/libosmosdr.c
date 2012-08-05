@@ -196,14 +196,18 @@ int e4k_set_enh_gain(void *dev, int32_t gain) {
 
 int e4k_set_gain(void *dev, int gain) {
 	int8_t mixgain = (gain > 340) ? 12 : 4;
+#if 0
 	int enhgain = (gain - 420);
-	if(e4k_set_lna_gain(dev, min(300, gain - 40)))
+#endif
+	if(e4k_set_lna_gain(dev, min(300, gain - mixgain * 10)))
 		return -1;
 	if(e4k_mixer_gain_set(dev, mixgain))
 		return -1;
+#if 0 /* enhanced mixer gain seems to have no effect */
 	if(enhgain >= 0)
 		if(e4k_set_enh_gain(dev, enhgain))
 			return -1;
+#endif
 	return 0;
 }
 
@@ -299,8 +303,9 @@ uint32_t osmosdr_get_center_freq(osmosdr_dev_t *dev)
 
 int osmosdr_get_tuner_gains(osmosdr_dev_t *dev, int *gains)
 {
+	/* all gain values are expressed in tenths of a dB */
 	const int e4k_gains[] = { -10, 15, 40, 65, 90, 115, 140, 165, 190, 215,
-				  240, 290, 340, 420, 430, 450, 470, 490 };
+				  240, 290, 340, 420 };
 	int len = sizeof(e4k_gains);
 
 	if (!dev)
