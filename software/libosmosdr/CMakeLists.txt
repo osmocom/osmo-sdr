@@ -82,6 +82,20 @@ add_custom_target(uninstall
 )
 
 ########################################################################
+# Install udev rules
+########################################################################
+option(INSTALL_UDEV_RULES "Install udev rules for OsmoSDR" ON)
+if (INSTALL_UDEV_RULES)
+    install (
+        FILES osmosdr.rules
+        DESTINATION "/etc/udev/rules.d"
+        COMPONENT "udev"
+        )
+else (INSTALL_UDEV_RULES)
+    message (STATUS "Udev rules not being installed, install them with -DINSTALL_UDEV_RULES=ON")
+endif (INSTALL_UDEV_RULES)
+
+########################################################################
 # Add subdirectories
 ########################################################################
 add_subdirectory(include)
