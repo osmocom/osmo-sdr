@@ -7,16 +7,19 @@ SUBDIRS = include src
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libosmosdr.pc
 
-udevrulesdir=/etc/udev/rules.d
-udevrules_DATA = osmosdr.rules
-
 BUILT_SOURCES = $(top_srcdir)/.version
 $(top_srcdir)/.version:
 	echo $(VERSION) > $@-t && mv $@-t $@
 dist-hook:
 	echo $(VERSION) > $(distdir)/.tarball-version
 
-EXTRA_DIST = git-version-gen $(udevrules_DATA)
+install-udev-rules:
+        $(INSTALL_DATA) osmosdr.rules /etc/udev/rules.d
+
+uninstall-udev-rules:
+        rm -rf /etc/udev/rules.d/osmosdr.rules
+
+EXTRA_DIST = git-version-gen
 
 if HAVE_DOXYGEN
 
