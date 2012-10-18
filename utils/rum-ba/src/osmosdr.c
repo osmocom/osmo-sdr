@@ -137,3 +137,8 @@ int osmoSDRFlashFPGA(HANDLE fd, const void* algo, size_t algoSize, const void* b
 
 	return 0;
 }
+
+int osmoSDRReset(HANDLE fd)
+{
+	return sam3uReset(fd);
+}

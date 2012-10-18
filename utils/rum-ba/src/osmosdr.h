@@ -10,5 +10,6 @@ int osmoSDRBlink(HANDLE fd);
 int osmoSDRRamLoad(HANDLE fd, const void* bin, size_t binSize);
 int osmoSDRFlashMCU(HANDLE fd, const void* bin, size_t binSize);
 int osmoSDRFlashFPGA(HANDLE fd, const void* algo, size_t algoSize, const void* bin, size_t binSize);
+int osmoSDRReset(HANDLE fd);
 
 #endif // INCLUDE_OSMOSDR_H

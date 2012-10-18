@@ -17,4 +17,6 @@ int sam3uDetect(HANDLE fd, uint32_t* chipID);
 int sam3uReadUniqueID(HANDLE fd, int bank, uint8_t* uniqueID);
 int sam3uFlash(HANDLE fd, int bank, const void* bin, size_t binSize);
 
+int sam3uReset(HANDLE fd);
+
 #endif // INCLUDE_SAM3U_H

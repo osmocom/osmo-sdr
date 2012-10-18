@@ -99,6 +99,8 @@ int main(int argc, char* argv[])
 			res = osmoSDRDetect(fd);
 		if(res >= 0)
 			res = osmoSDRFlashMCU(fd, bin, binSize);
+		if(res >= 0)
+			osmoSDRReset(fd);
 		serialClose(fd);
 	} else {
 		return printSyntax();

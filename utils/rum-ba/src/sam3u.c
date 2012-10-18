@@ -306,3 +306,8 @@ error:
 	printf(" -- ERROR\n");
 	return -1;
 }
+
+int sam3uReset(HANDLE fd)
+{
+	return sam3uWrite32(fd, 0x400e1200, 0xa500000f);
+}
