@@ -74,7 +74,7 @@ BUILD_TIME=$(shell date "+%H:%M:%S")
 BUILD_ZONE=$(shell date "+%Z")
 BUILD_HOST=$(shell uname -n)
 BUILD_GCC=$(shell $(CC) --version | head -1)
-BUILD_VCSID="no-vcs-id"
+BUILD_VCSID=$(shell ../../git-version-gen ../../.tarball_version)
 
 .PHONY: all build buildid clean distclean flash dfuflash
 
