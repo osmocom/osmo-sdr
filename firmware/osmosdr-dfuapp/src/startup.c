@@ -75,10 +75,15 @@ extern volatile u32 _dfumode;
 
 static void startApplication(void)
 {
-	if(_dfumode == DFU_MAGIC) {
-		_dfumode = 0;
+	u32 mode = _dfumode;
+
+	for(u32* ptr = (u32*)0x20000000; ptr < (u32*)0x20008000; ptr++)
+		*ptr = 0;
+	for(u32* ptr = (u32*)0x20080000; ptr < (u32*)0x20084000; ptr++)
+		*ptr = 0;
+
+	if(mode == DFU_MAGIC)
 		return;
-	}
 
 	const u32* app = (u32*)(AT91C_IFLASH0 + 16384);
 	void (*appReset)(void) = (void(*)(void))app[1];
