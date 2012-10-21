@@ -560,6 +560,21 @@ int osmosdr_set_fpga_iq_ofs(osmosdr_dev_t *dev, int16_t iofs, int16_t qofs)
 				       buffer, sizeof(buffer), CTRL_TIMEOUT);
 }
 
+int osmosdr_set_iq_amp(osmosdr_dev_t *dev, uint8_t i1, uint8_t i2, uint8_t q1, uint8_t q2)
+{
+	osmosdr_dev_t* devt = (osmosdr_dev_t*)dev;
+	uint8_t buffer[4];
+
+	buffer[0] = i1;
+	buffer[1] = i2;
+	buffer[2] = q1;
+	buffer[3] = q2;
+
+	return libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
+				       FUNC(4, 0x02), 0,
+				       buffer, sizeof(buffer), CTRL_TIMEOUT);
+}
+
 static osmosdr_dongle_t *find_known_device(uint16_t vid, uint16_t pid)
 {
 	unsigned int i;

@@ -186,6 +186,9 @@ OSMOSDR_API int osmosdr_set_fpga_iq_gain(osmosdr_dev_t *dev, uint16_t igain, uin
 /* configure i and q offset correction (corrected_i = orig_i + iofs */
 OSMOSDR_API int osmosdr_set_fpga_iq_ofs(osmosdr_dev_t *dev, int16_t iofs, int16_t qofs);
 
+/* configure i and q amplifiers */
+OSMOSDR_API int osmosdr_set_iq_amp(osmosdr_dev_t *dev, uint8_t i1, uint8_t i2, uint8_t q1, uint8_t q2);
+
 /* streaming functions */
 
 OSMOSDR_API int osmosdr_reset_buffer(osmosdr_dev_t *dev);
