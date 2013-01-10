@@ -14,10 +14,10 @@ dist-hook:
 	echo $(VERSION) > $(distdir)/.tarball-version
 
 install-udev-rules:
-        $(INSTALL_DATA) osmosdr.rules /etc/udev/rules.d
+	$(INSTALL_DATA) osmosdr.rules /etc/udev/rules.d
 
 uninstall-udev-rules:
-        rm -rf /etc/udev/rules.d/osmosdr.rules
+	rm -rf /etc/udev/rules.d/osmosdr.rules
 
 EXTRA_DIST = git-version-gen
 
