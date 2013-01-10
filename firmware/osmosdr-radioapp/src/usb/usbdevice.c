@@ -31,6 +31,7 @@
 #include "../driver/sdrfpga.h"
 #include "../driver/e4k.h"
 #include "../driver/chanfilter.h"
+#include "../driver/mci.h"
 
 #define STR_MANUFACTURER 1
 #define STR_PRODUCT 2
@@ -323,6 +324,7 @@ const static Request g_writeRequests[] = {
 	{ FUNC(GROUP_GENERAL, 0x00), 0, "general init" }, // init whatever
 	{ FUNC(GROUP_GENERAL, 0x01), 0, "general power down" }, // power down
 	{ FUNC(GROUP_GENERAL, 0x02), 0, "general power up" }, // power up
+	{ FUNC(GROUP_GENERAL, 0x03), 0, "switch to DFU" }, // switch to DFU mode
 
 	// fpga commands
 	{ FUNC(GROUP_FPGA_V2, 0x00), 0, "FPGA init" }, // fpga init
@@ -340,7 +342,7 @@ const static Request g_writeRequests[] = {
 
 	// e4000 tuner commands
 	{ FUNC(GROUP_TUNER_E4K, 0x00), 0, "E4K init" }, // e4k_init()
-	{ FUNC(GROUP_TUNER_E4K, 0x01), 0, "E4K register write" }, // reg write
+	{ FUNC(GROUP_TUNER_E4K, 0x01), 2, "E4K register write" }, // reg write
 	{ FUNC(GROUP_TUNER_E4K, 0x02), 5, "E4K set if gain" }, // e4k_if_gain_set(uint8_t stage, int8_t value)
 	{ FUNC(GROUP_TUNER_E4K, 0x03), 1, "E4K set mixer gain" }, // e4k_mixer_gain_set(struct e4k_state *e4k, int8_t value)
 	{ FUNC(GROUP_TUNER_E4K, 0x04), 1, "E4K set commonmode" }, // e4k_commonmode_set(int8_t value)
@@ -414,7 +416,7 @@ static void sourceStart(void)
 
 static void finalizeWrite(void* arg, u8 status, uint transferred, uint remaining)
 {
-	int res;
+	int res = 0;
 
 	if((status != 0) ||(remaining != 0)) {
 		dprintf("USB request failed\n");
@@ -425,115 +427,115 @@ static void finalizeWrite(void* arg, u8 status, uint transferred, uint remaining
 	switch(g_writeState.func) {
 		// general api
 		case FUNC(GROUP_GENERAL, 0x00): // init all
-			res = 0; // no op so far
+			// no op so far
 			break;
 		case FUNC(GROUP_GENERAL, 0x01): // power down
 			sdrfpga_setPower(False);
 			e4k_setPower(&g_e4kCtx, False);
-			res = 0;
 			break;
 		case FUNC(GROUP_GENERAL, 0x02): // power up
 			sdrfpga_setPower(True);
 			e4k_setPower(&g_e4kCtx, True);
-			res = 0;
 			break;
+        case FUNC(GROUP_GENERAL, 0x03): // switch to DFU
+			sys_reset(True);
+			break;
+
 
 		// fpga commands
 		case FUNC(GROUP_FPGA_V2, 0x00): // fpga init
-			res = 0; // no op so far
+			// no op so far
 			break;
-		case FUNC(GROUP_FPGA_V2, 0x01):
+		case FUNC(GROUP_FPGA_V2, 0x01): // reg write
 			sdrfpga_regWrite(g_writeState.data[0], read_bytewise32(g_writeState.data + 1));
-			res = 0;
 			break;
-		case FUNC(GROUP_FPGA_V2, 0x02):
+		case FUNC(GROUP_FPGA_V2, 0x02): // set decimation
 			sdrfpga_setDecimation(g_writeState.data[0]);
-			res = 0;
+#if defined(BOARD_SAMPLE_SOURCE_MCI)
+			mci_setSpeed(AT91C_BASE_MCI0, g_writeState.data[0]);
+#endif // defined(BOARD_SAMPLE_SOURCE_MCI)
 			break;
-		case FUNC(GROUP_FPGA_V2, 0x03):
+		case FUNC(GROUP_FPGA_V2, 0x03): // set IQ swap
 			sdrfpga_setIQSwap(g_writeState.data[0]);
-			res = 0;
 			break;
-		case FUNC(GROUP_FPGA_V2, 0x04):
+		case FUNC(GROUP_FPGA_V2, 0x04): // set IQ gain
 			sdrfpga_setIQGain(read_bytewise16(g_writeState.data), read_bytewise16(g_writeState.data + 2));
-			res = 0;
 			break;
-		case FUNC(GROUP_FPGA_V2, 0x05):
+		case FUNC(GROUP_FPGA_V2, 0x05): // set IQ offset
 			sdrfpga_setIQOfs(read_bytewise16(g_writeState.data), read_bytewise16(g_writeState.data + 2));
-			res = 0;
 			break;
 
 		// si570 vcxo commands
 		case FUNC(GROUP_VCXO_SI570, 0x00): // si570_init()
 			res = si570_init(&g_si570Ctx);
 			break;
-		case FUNC(GROUP_VCXO_SI570, 0x01):
+		case FUNC(GROUP_VCXO_SI570, 0x01): // reg write
 			res = si570_regWrite(&g_si570Ctx, g_writeState.data[0], g_writeState.data[1], g_writeState.data + 2);
 			break;
-		case FUNC(GROUP_VCXO_SI570, 0x02):
+		case FUNC(GROUP_VCXO_SI570, 0x02): // set frequency and trim value
 			res = si570_setFrequencyAndTrim(&g_si570Ctx, read_bytewise32(g_writeState.data), read_bytewise32(g_writeState.data + 4));
 			break;
-		case FUNC(GROUP_VCXO_SI570, 0x03):
+		case FUNC(GROUP_VCXO_SI570, 0x03): // set frequency
 			res = si570_setFrequency(&g_si570Ctx, read_bytewise32(g_writeState.data));
 			break;
 
 		// e4000 tuner commands
-		case FUNC(GROUP_TUNER_E4K, 0x00):
+		case FUNC(GROUP_TUNER_E4K, 0x00): // e4k_reInit
 			res = e4k_reInit(&g_e4kCtx);
 			break;
 		case FUNC(GROUP_TUNER_E4K, 0x01): // reg write
-			res = -1;
+			res = e4k_setReg(&g_e4kCtx, g_writeState.data[0], g_writeState.data[1]);
 			break;
-		case FUNC(GROUP_TUNER_E4K, 0x02):
+		case FUNC(GROUP_TUNER_E4K, 0x02): // set IF gain
 			res = e4k_ifGainSet(&g_e4kCtx, g_writeState.data[0], read_bytewise32(g_writeState.data + 1));
 			e4k_dcOffsetCalibrate(&g_e4kCtx);
 			break;
-		case FUNC(GROUP_TUNER_E4K, 0x03):
+		case FUNC(GROUP_TUNER_E4K, 0x03): // set mixer gain
 			res = e4k_mixerGainSet(&g_e4kCtx, g_writeState.data[0]);
 			e4k_dcOffsetCalibrate(&g_e4kCtx);
 			break;
-		case FUNC(GROUP_TUNER_E4K, 0x04):
+		case FUNC(GROUP_TUNER_E4K, 0x04): // set common mode
 			res = e4k_commonModeSet(&g_e4kCtx, g_writeState.data[0]);
 			break;
-		case FUNC(GROUP_TUNER_E4K, 0x05):
+		case FUNC(GROUP_TUNER_E4K, 0x05): // tune
 			res = e4k_tune(&g_e4kCtx, read_bytewise32(g_writeState.data) / 1000);
 			e4k_dcOffsetCalibrate(&g_e4kCtx);
 			break;
-		case FUNC(GROUP_TUNER_E4K, 0x06):
+		case FUNC(GROUP_TUNER_E4K, 0x06): // set if filter BW
 			res = e4k_ifFilterBWSet(&g_e4kCtx, g_writeState.data[0], read_bytewise32(g_writeState.data + 1));
 			break;
-		case FUNC(GROUP_TUNER_E4K, 0x07):
+		case FUNC(GROUP_TUNER_E4K, 0x07): // set channel filter
 			res = e4k_ifFilterChanEnable(&g_e4kCtx, g_writeState.data[0]);
 			break;
-		case FUNC(GROUP_TUNER_E4K, 0x08):
+		case FUNC(GROUP_TUNER_E4K, 0x08): // set DC offset
 			res = e4k_manualDCOffsetSet(&g_e4kCtx, g_writeState.data[0], g_writeState.data[1], g_writeState.data[2], g_writeState.data[3]);
 			break;
-		case FUNC(GROUP_TUNER_E4K, 0x09):
+		case FUNC(GROUP_TUNER_E4K, 0x09): // calibrate DC offset
 			res = e4k_dcOffsetCalibrate(&g_e4kCtx);
 			break;
-		case FUNC(GROUP_TUNER_E4K, 0x0a):
+		case FUNC(GROUP_TUNER_E4K, 0x0a): // generate DC offset table
 			res = e4k_dcOffsetGenTable(&g_e4kCtx);
 			break;
-		case FUNC(GROUP_TUNER_E4K, 0x0b):
-			res = e4k_setLNAGain(&g_e4kCtx, read_bytewise32(g_writeState.data));
+		case FUNC(GROUP_TUNER_E4K, 0x0b): // set LNA gain
+			res = e4k_setLNAGain(&g_e4kCtx, (s32)read_bytewise32(g_writeState.data));
 			e4k_dcOffsetCalibrate(&g_e4kCtx);
 			break;
-		case FUNC(GROUP_TUNER_E4K, 0x0c):
+		case FUNC(GROUP_TUNER_E4K, 0x0c): // enable manual gain control
 			res = e4k_enableManualGain(&g_e4kCtx, g_writeState.data[0]);
 			break;
-		case FUNC(GROUP_TUNER_E4K, 0x0d):
+		case FUNC(GROUP_TUNER_E4K, 0x0d): // enable enhanced gain
 			res = e4k_setEnhGain(&g_e4kCtx, read_bytewise32(g_writeState.data));
 			e4k_dcOffsetCalibrate(&g_e4kCtx);
 			break;
 
 		// op-amp based channel filter
-		case FUNC(GROUP_FILTER_V1, 0x00):
-			res = 0; // no op so far
+		case FUNC(GROUP_FILTER_V1, 0x00): // init
+			// no op so far
 			break;
-		case FUNC(GROUP_FILTER_V1, 0x01):
+		case FUNC(GROUP_FILTER_V1, 0x01): // reg write
 			res = chanfilter_regWrite(g_writeState.data[0], g_writeState.data[1], g_writeState.data[2]);
 			break;
-		case FUNC(GROUP_FILTER_V1, 0x02):
+		case FUNC(GROUP_FILTER_V1, 0x02): // set all potis
 			res = chanfilter_setAll(g_writeState.data[0], g_writeState.data[1], g_writeState.data[2], g_writeState.data[3]);
 			break;
 
@@ -565,12 +567,12 @@ static void osmosdrWrite(const USBGenericRequest* request)
 	}
 	if(i == ARRAY_SIZE(g_writeRequests)) {
 		usbdhs_stall(0);
-		dprintf("OsmoSDR invalid request size\n");
+		dprintf("OsmoSDR unknown request\n");
 		return;
 	}
 	if(len != g_writeRequests[i].len) {
 		usbdhs_stall(0);
-		dprintf("OsmoSDR unknown request\n");
+		dprintf("OsmoSDR invalid request size\n");
 		return;
 	}
 

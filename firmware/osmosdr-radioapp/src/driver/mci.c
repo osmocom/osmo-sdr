@@ -138,6 +138,28 @@ void mci_configure(AT91S_MCI* mci, uint id)
 	mci->MCI_CFG = AT91C_MCI_FIFOMODE_AMOUNTDATA | AT91C_MCI_FERRCTRL_RWCMD | AT91C_MCI_HSMODE_ENABLE;
 }
 
+void mci_setSpeed(AT91S_MCI* mci, u32 decimation)
+{
+	uint speed = MCI_INITIAL_SPEED;
+
+	/*
+	 * Fs = 4MHz
+	 * Dec  MCI-Speed
+	 * 32    1500000
+	 * 16    3000000
+	 *  8    6000000
+	 *  4   12000000
+	 *  2   24000000
+	 *  1   48000000
+	 */
+
+	if((decimation >= 0) && (decimation <= 7))
+		speed = 96000000 / (2 << decimation);
+
+	uint clkDiv = (BOARD_MCK / (speed * 2)) - 1;
+	mci->MCI_MR = (clkDiv | (AT91C_MCI_PWSDIV & (0x7 << 8))) | AT91C_MCI_RDPROOF_ENABLE | (512 << 16);
+}
+
 void mci_startStream(AT91S_MCI* mci)
 {
 #if 0

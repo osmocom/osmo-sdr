@@ -1012,7 +1012,7 @@ int e4k_reInit(E4KCtx* e4k)
 	magic_init(e4k);
 
 	/* Set common mode voltage a bit higher for more margin */
-	e4k_commonModeSet(e4k, 3);
+	e4k_commonModeSet(e4k, 7);
 #if 0
 	/* Initialize DC offset lookup tables */
 	e4k_dc_offset_gen_table(e4k);
@@ -1102,6 +1102,11 @@ void e4k_dump(E4KCtx* e4k)
 			i + 128, e4k_reg_read(e4k, i + 128),
 			i + 192, e4k_reg_read(e4k, i + 192)
 	);
+}
+
+int e4k_setReg(E4KCtx* e4k, u8 reg, u8 val)
+{
+	return e4k_reg_write(e4k, reg, val);
 }
 
 

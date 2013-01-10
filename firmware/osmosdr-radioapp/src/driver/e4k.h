@@ -60,6 +60,7 @@ typedef struct {
 void e4k_configure(E4KCtx* ctx, const TWI* twi, u8 addr, u32 refFreq, const PinConfig* powerPins, uint numPowerPins);
 void e4k_setPower(E4KCtx* ctx, Bool up);
 void e4k_dump(E4KCtx* e4k);
+int e4k_setReg(E4KCtx* e4k, u8 reg, u8 val);
 int e4k_tune(E4KCtx* e4k, u32 freq);
 int e4k_reInit(E4KCtx* e4k);
 int e4k_ifGainSet(E4KCtx* e4k, u8 stage, s8 value);

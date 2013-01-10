@@ -5,6 +5,7 @@
 #include "../crt/types.h"
 
 void mci_configure(AT91S_MCI* mci, uint id);
+void mci_setSpeed(AT91S_MCI* mci, u32 decimation);
 void mci_startStream(AT91S_MCI* mci);
 void mci_stopStream(AT91S_MCI* mci);
 void mci_enableInterrupts(AT91S_MCI* mci, u32 irqs);
