@@ -104,13 +104,23 @@ void sdrfpga_configure(void)
 	pio_configure(sdrFPGADataPins, 4);
 	pio_configure(sdrFPGAPowerPin, 1);
 
+	pio_clear(&sdrFPGAPowerPin[0]);
+	for(volatile int i = 0; i < 500000; i++) ;
+	pio_set(&sdrFPGAPowerPin[0]);
+	for(volatile int i = 0; i < 100000; i++) ;
+
 	spi_configure(BOARD_OSDR_SPI, AT91C_ID_SPI0, AT91C_SPI_MSTR | AT91C_SPI_PS_FIXED);
 	spi_configureNPCS(BOARD_OSDR_SPI, 0, OSDR_FPGA_NPCSCONFIG(BOARD_MCK));
 	spi_enable(BOARD_OSDR_SPI);
 
 	u32 magic = regRead(REG_MAGIC);
-	if(magic != 0xdeadbeef)
-		printf("FPGA magic: 0x%08x - FPGA BROKEN\n", magic);
+	if(magic != 0xdeadbeef) {
+		// second try...
+		magic = regRead(REG_MAGIC);
+		if(magic != 0xdeadbeef) {
+			printf("FPGA magic: 0x%08x - FPGA BROKEN\n", magic);
+		}
+	}
 
 	// initialize PPS update counter
 	g_fpga.ppsLastUpd = (regRead(REG_PPS) >> 25) & 0x7f;
@@ -118,6 +128,9 @@ void sdrfpga_configure(void)
 	sdrfpga_setIQSwap(False);
 	// switch off test mode
 	sdrfpga_setTestmode(False);
+
+	// 80MHz ADC clock, 4 clocks for #CS up -> 20 clocks per sample -> 4msps
+	sdrfpga_regWrite(REG_ADCMODE, 0x0401);
 }
 
 void sdrfpga_setPower(Bool up)
