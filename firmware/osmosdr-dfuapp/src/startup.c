@@ -33,6 +33,7 @@
 #include "board.h"
 #include "at91sam3u4/core_cm3.h"
 #include "vectors.h"
+#include "driver/led.h"
 
 int main(void);
 
@@ -189,7 +190,10 @@ static void initRAM(void)
 
 __attribute__((noreturn)) void resetHandler(void)
 {
+	led_configure();
+	led_internalSet(True);
 	startApplication();
+	led_internalSet(False);
 	lowLevelInit();
 	initRAM();
 

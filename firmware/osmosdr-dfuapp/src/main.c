@@ -38,7 +38,6 @@ static void displaySN()
 
 int main(void)
 {
-	led_configure();
 	dbgio_configure(115200);
 
 	printf("\n\n** OsmoSDR ** running in DFU mode **\n");

@@ -33,7 +33,7 @@
 
 static const PinConfig ledPins[] = {
 	{ AT91C_PIO_PB18, AT91C_BASE_PIOB, AT91C_ID_PIOB, PIO_OUTPUT_1, PIO_DEFAULT }, // external LED
-	{ AT91C_PIO_PB19, AT91C_BASE_PIOB, AT91C_ID_PIOB, PIO_OUTPUT_1, PIO_DEFAULT } // internal LED
+	{ AT91C_PIO_PB19, AT91C_BASE_PIOB, AT91C_ID_PIOB, PIO_OUTPUT_0, PIO_DEFAULT } // internal LED
 };
 
 void led_configure(void)
