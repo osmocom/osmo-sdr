@@ -41,17 +41,28 @@ static void e4kTune(int argc, const char* argv[])
 	}
 }
 
+static void e4kSetReg(int argc, const char* argv[])
+{
+	if(argc != 2) {
+		printf("E4K: please supply register number and value\n");
+		return;
+	}
+	u32 reg = atoi(argv[0]);
+	u32 val = atoi(argv[1]);
+	e4k_setReg(&g_e4kCtx, reg, val);
+}
+
 CONSOLE_CMD_BEGIN(g_e4kTuneParameters)
 	CONSOLE_CMD_PARAM(PTUnsigned, "frequency in kHz")
 CONSOLE_CMD_END()
 
-CONSOLE_CMD_BEGIN(g_e4kIQOfsParameters)
-	CONSOLE_CMD_PARAM(PTSigned, "I offset"),
-	CONSOLE_CMD_PARAM(PTSigned, "Q offset")
+CONSOLE_CMD_BEGIN(g_e4kSetRegParameters)
+	CONSOLE_CMD_PARAM(PTUnsigned, "register"),
+	CONSOLE_CMD_PARAM(PTUnsigned, "value")
 CONSOLE_CMD_END()
 
 CONSOLE_GROUP_BEGIN(g_e4kGroup)
 	CONSOLE_GROUP_CMD("dump", "dump tuner registers", NULL, &e4kDump),
 	CONSOLE_GROUP_CMD("tune", "set frequency in kHz", g_e4kTuneParameters, &e4kTune),
-	CONSOLE_GROUP_CMD("iqofs", "set I/Q offset", g_e4kIQOfsParameters, NULL)
+	CONSOLE_GROUP_CMD("sreg", "set E4K register", g_e4kSetRegParameters, &e4kSetReg)
 CONSOLE_GROUP_END()

@@ -68,11 +68,29 @@ static void fpgaFFT(int argc, const char* argv[])
 #endif // defined(BOARD_SAMPLE_SOURCE_SSC)
 }
 
+static void fpgaSetReg(int argc, const char* argv[])
+{
+	if(argc != 2) {
+		printf("FPGA: please supply register number and value\n");
+		return;
+	}
+	u32 reg = atoi(argv[0]);
+	u32 val = atoi(argv[1]);
+	void sdrfpga_regWrite(u8 reg, u32 val);
+	sdrfpga_regWrite(reg, val);
+}
+
+CONSOLE_CMD_BEGIN(g_fpgaSetRegParameters)
+	CONSOLE_CMD_PARAM(PTUnsigned, "register"),
+	CONSOLE_CMD_PARAM(PTUnsigned, "value")
+CONSOLE_CMD_END()
+
 CONSOLE_GROUP_BEGIN(g_fpgaGroup)
 	CONSOLE_GROUP_CMD("pps", "PPS frequency reference", NULL, &fpgaPPS),
 	CONSOLE_GROUP_CMD("start", "start sampling", NULL, &fpgaStart),
 	CONSOLE_GROUP_CMD("stop", "stop sampling", NULL, &fpgaStop),
 	CONSOLE_GROUP_CMD("stats", "print sampling statistics", NULL, &fpgaStats),
-	CONSOLE_GROUP_CMD("fft", "calculate and display FFT of input", NULL, &fpgaFFT)
+	CONSOLE_GROUP_CMD("fft", "calculate and display FFT of input", NULL, &fpgaFFT),
+	CONSOLE_GROUP_CMD("sreg", "set FPGA register", g_fpgaSetRegParameters, &fpgaSetReg)
 CONSOLE_GROUP_END()
 
