@@ -142,6 +142,8 @@ static void twiConfigureMaster(AT91S_TWI* twi, uint twck, uint mck)
 	twi->TWI_CR = AT91C_TWI_SVEN;
 	// Reset the TWI
 	twi->TWI_CR = AT91C_TWI_SWRST;
+	twi->TWI_CR = AT91C_TWI_SWRST;
+	twi->TWI_CR = AT91C_TWI_SWRST;
 	twi->TWI_RHR;
 
 	// TWI Slave Mode Disabled, TWI Master Mode Disabled
