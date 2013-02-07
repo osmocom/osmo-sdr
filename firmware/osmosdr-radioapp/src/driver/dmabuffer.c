@@ -27,11 +27,12 @@ void dmaBuffer_init(DMABufferQueue* queue)
 	queue->last = NULL;
 }
 
-void dmaBuffer_initBuffer(DMABuffer* buffer, void* data, uint size)
+void dmaBuffer_initBuffer(DMABuffer* buffer, void* data, uint size, uint id)
 {
 	buffer->data = data;
 	buffer->size = size;
 	buffer->next = NULL;
+	buffer->id = id;
 }
 
 Bool dmaBuffer_isEmpty(const DMABufferQueue* queue)

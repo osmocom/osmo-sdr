@@ -8,6 +8,7 @@ typedef struct DMABuffer_ {
 	uint size;
 	DMADescriptor dma;
 	struct DMABuffer_* next;
+	uint id;
 } DMABuffer;
 
 typedef struct {
@@ -16,7 +17,7 @@ typedef struct {
 } DMABufferQueue;
 
 void dmaBuffer_init(DMABufferQueue* queue);
-void dmaBuffer_initBuffer(DMABuffer* buffer, void* data, uint size);
+void dmaBuffer_initBuffer(DMABuffer* buffer, void* data, uint size, uint id);
 Bool dmaBuffer_isEmpty(const DMABufferQueue* queue);
 DMABuffer* dmaBuffer_enqueue(DMABufferQueue* queue, DMABuffer* buffer);
 DMABuffer* dmaBuffer_dequeue(DMABufferQueue* queue);
