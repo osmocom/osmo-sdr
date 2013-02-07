@@ -349,7 +349,7 @@ const static Request g_writeRequests[] = {
 	{ FUNC(GROUP_TUNER_E4K, 0x05), 4, "E4K tune" }, // e4k_tune_freq(uint32_t freq)
 	{ FUNC(GROUP_TUNER_E4K, 0x06), 5, "E4K set filter bandwidth" }, // e4k_if_filter_bw_set(enum e4k_if_filter filter, uint32_t bandwidth)
 	{ FUNC(GROUP_TUNER_E4K, 0x07), 1, "E4K set channel filter" }, // e4k_if_filter_chan_enable(int on)
-	{ FUNC(GROUP_TUNER_E4K, 0x08), 4, "E4K set DC offset" }, // e4k_manual_dc_offset(int8_t iofs, int8_t irange, int8_t qofs, int8_t qrange)
+	{ FUNC(GROUP_TUNER_E4K, 0x08), 2, "E4K set DC offset" }, // e4k_manual_dc_offset(int8_t iofs, int8_t qofs)
 	{ FUNC(GROUP_TUNER_E4K, 0x09), 0, "E4K DC offset calibrate" }, // e4k_dc_offset_calibrate()
 	{ FUNC(GROUP_TUNER_E4K, 0x0a), 0, "E4K DC offset generate table" }, // e4k_dc_offset_gen_table()
 	{ FUNC(GROUP_TUNER_E4K, 0x0b), 4, "E4K set LNA gain" }, // e4k_set_lna_gain(int32_t gain)
@@ -380,15 +380,17 @@ static void sourceComplete(void* arg, u8 status, uint transferred, uint remainin
 {
 	usbDevice.running = False;
 #if defined(BOARD_SAMPLE_SOURCE_SSC)
-			sdrssc_returnBuffer((DMABuffer*)arg);
+	sdrssc_returnBuffer((DMABuffer*)arg);
 #endif // defined(BOARD_SAMPLE_SOURCE_SSC)
 #if defined(BOARD_SAMPLE_SOURCE_MCI)
-			sdrmci_returnBuffer((DMABuffer*)arg);
+	sdrmci_returnBuffer((DMABuffer*)arg);
 #endif // defined(BOARD_SAMPLE_SOURCE_MCI)
 
-	if((status != 0) || (remaining != 0))
+	if((status != 0) || (remaining != 0)) {
 		return;
-	else sourceStart();
+	} else {
+		sourceStart();
+	}
 }
 
 static void sourceStart(void)
@@ -499,7 +501,6 @@ static void finalizeWrite(void* arg, u8 status, uint transferred, uint remaining
 			break;
 		case FUNC(GROUP_TUNER_E4K, 0x05): // tune
 			res = e4k_tune(&g_e4kCtx, read_bytewise32(g_writeState.data) / 1000);
-			e4k_dcOffsetCalibrate(&g_e4kCtx);
 			break;
 		case FUNC(GROUP_TUNER_E4K, 0x06): // set if filter BW
 			res = e4k_ifFilterBWSet(&g_e4kCtx, g_writeState.data[0], read_bytewise32(g_writeState.data + 1));
@@ -508,7 +509,9 @@ static void finalizeWrite(void* arg, u8 status, uint transferred, uint remaining
 			res = e4k_ifFilterChanEnable(&g_e4kCtx, g_writeState.data[0]);
 			break;
 		case FUNC(GROUP_TUNER_E4K, 0x08): // set DC offset
-			res = e4k_manualDCOffsetSet(&g_e4kCtx, g_writeState.data[0], g_writeState.data[1], g_writeState.data[2], g_writeState.data[3]);
+			res = e4k_manualDCOffsetSet(&g_e4kCtx,
+				g_writeState.data[0] & 0x3f, (g_writeState.data[0] >> 6) & 3,
+				g_writeState.data[1] & 0x3f, (g_writeState.data[1] >> 6) & 3);
 			break;
 		case FUNC(GROUP_TUNER_E4K, 0x09): // calibrate DC offset
 			res = e4k_dcOffsetCalibrate(&g_e4kCtx);
@@ -518,14 +521,12 @@ static void finalizeWrite(void* arg, u8 status, uint transferred, uint remaining
 			break;
 		case FUNC(GROUP_TUNER_E4K, 0x0b): // set LNA gain
 			res = e4k_setLNAGain(&g_e4kCtx, (s32)read_bytewise32(g_writeState.data));
-			e4k_dcOffsetCalibrate(&g_e4kCtx);
 			break;
 		case FUNC(GROUP_TUNER_E4K, 0x0c): // enable manual gain control
 			res = e4k_enableManualGain(&g_e4kCtx, g_writeState.data[0]);
 			break;
 		case FUNC(GROUP_TUNER_E4K, 0x0d): // enable enhanced gain
 			res = e4k_setEnhGain(&g_e4kCtx, read_bytewise32(g_writeState.data));
-			e4k_dcOffsetCalibrate(&g_e4kCtx);
 			break;
 
 		// op-amp based channel filter
@@ -572,7 +573,7 @@ static void osmosdrWrite(const USBGenericRequest* request)
 	}
 	if(len != g_writeRequests[i].len) {
 		usbdhs_stall(0);
-		dprintf("OsmoSDR invalid request size\n");
+		dprintf("OsmoSDR invalid request size (%d != %d)\n", len, g_writeRequests[i].len);
 		return;
 	}
 
