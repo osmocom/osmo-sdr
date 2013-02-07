@@ -36,6 +36,8 @@
 #define CSTOR_1MEGA_CYCLES (AT91C_MCI_CSTOCYC | AT91C_MCI_CSTOMUL)
 #define MCI_INITIAL_SPEED 48000000
 
+#define BLKLEN 64
+
 static void dumpSRFlags(u32 sr)
 {
 	if(sr & AT91C_MCI_CMDRDY)
@@ -123,7 +125,7 @@ void mci_configure(AT91S_MCI* mci, uint id)
 
 	// set the mode register
 	uint clkDiv = (BOARD_MCK / (MCI_INITIAL_SPEED * 2)) - 1;
-	mci->MCI_MR = (clkDiv | (AT91C_MCI_PWSDIV & (0x7 << 8))) | AT91C_MCI_RDPROOF_ENABLE | (512 << 16);
+	mci->MCI_MR = (clkDiv | (AT91C_MCI_PWSDIV & (0x7 << 8))) | AT91C_MCI_RDPROOF_ENABLE | (BLKLEN << 16);
 
 	// set the SDCard register
 	mci->MCI_SDCR = AT91C_MCI_SCDSEL_SLOTA | AT91C_MCI_SCDBUS_4BITS;
@@ -157,18 +159,18 @@ void mci_setSpeed(AT91S_MCI* mci, u32 decimation)
 		speed = 96000000 / (2 << decimation);
 
 	uint clkDiv = (BOARD_MCK / (speed * 2)) - 1;
-	mci->MCI_MR = (clkDiv | (AT91C_MCI_PWSDIV & (0x7 << 8))) | AT91C_MCI_RDPROOF_ENABLE | (512 << 16);
+	mci->MCI_MR = (clkDiv | (AT91C_MCI_PWSDIV & (0x7 << 8))) | AT91C_MCI_RDPROOF_ENABLE | (BLKLEN << 16);
 }
 
 void mci_startStream(AT91S_MCI* mci)
 {
-#if 0
+#if 1
 	mci->MCI_ARGR =
-		(0 << 31) | // R/W
+		(1 << 31) | // #R/W
 		(0 << 28) | // Function
 		(0 << 27) | // RAW
-		(0x111 << 9) | // Register Address
-		(0 << 0); // Data
+		(0x110 << 9) | // Register Address
+		((BLKLEN % 256) << 0); // Data
 	mci->MCI_CMDR =
 		52 |
 		AT91C_MCI_RSPTYP_48 |
@@ -180,15 +182,42 @@ void mci_startStream(AT91S_MCI* mci)
 		AT91C_MCI_IOSPCMD_NONE |
 		AT91C_MCI_ATACS_NORMAL;
 	while(!(mci->MCI_SR & AT91C_MCI_CMDRDY)) ;
+	/*
 	u32 sr = mci->MCI_SR;
 	printf("MCI SR: %08x ", sr);
 	dumpSRFlags(sr);
 	printf("\n");
 	printf("Response %08x %08x %08x %08x\n", mci->MCI_RSPR[0], mci->MCI_RSPR[1], mci->MCI_RSPR[2], mci->MCI_RSPR[3]);
+	*/
+
+	mci->MCI_ARGR =
+		(1 << 31) | // #R/W
+		(0 << 28) | // Function
+		(0 << 27) | // RAW
+		(0x111 << 9) | // Register Address
+		((BLKLEN / 256) << 0); // Data
+	mci->MCI_CMDR =
+		52 |
+		AT91C_MCI_RSPTYP_48 |
+		AT91C_MCI_SPCMD_NONE |
+		AT91C_MCI_OPDCMD_PUSHPULL |
+		AT91C_MCI_MAXLAT_64 |
+		AT91C_MCI_TRCMD_NO |
+		AT91C_MCI_TRDIR_READ |
+		AT91C_MCI_IOSPCMD_NONE |
+		AT91C_MCI_ATACS_NORMAL;
+	while(!(mci->MCI_SR & AT91C_MCI_CMDRDY)) ;
+	/*
+	sr = mci->MCI_SR;
+	printf("MCI SR: %08x ", sr);
+	dumpSRFlags(sr);
+	printf("\n");
+	printf("Response %08x %08x %08x %08x\n", mci->MCI_RSPR[0], mci->MCI_RSPR[1], mci->MCI_RSPR[2], mci->MCI_RSPR[3]);
+	*/
 #endif
 
 	mci->MCI_CFG = AT91C_MCI_FIFOMODE_ONEDATA | AT91C_MCI_FERRCTRL_READSR | AT91C_MCI_HSMODE_ENABLE;
-	mci->MCI_BLKR = (512 << 16) | (0 << 0);
+	mci->MCI_BLKR = (BLKLEN << 16) | (0 << 0);
 	mci->MCI_DMA = AT91C_MCI_DMAEN_ENABLE | (1 << 12) | AT91C_MCI_CHKSIZE_4 | 0;
 
 	mci->MCI_ARGR =
@@ -213,6 +242,8 @@ void mci_startStream(AT91S_MCI* mci)
 	/*
 	u32 sr = mci->MCI_SR;
 	printf("MCI SR: %08x ", sr);
+	*/
+	/*
 	dumpSRFlags(sr);
 	printf("\n");
 	printf("Response %08x %08x %08x %08x\n", mci->MCI_RSPR[0], mci->MCI_RSPR[1], mci->MCI_RSPR[2], mci->MCI_RSPR[3]);
