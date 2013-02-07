@@ -419,6 +419,19 @@ int osmosdr_set_tuner_if_gain(osmosdr_dev_t *dev, int stage, int gain)
 				       buffer, sizeof(buffer), CTRL_TIMEOUT);
 }
 
+int osmosdr_set_tuner_dc_offset(osmosdr_dev_t *dev, int iofs, int qofs)
+{
+	osmosdr_dev_t* devt = (osmosdr_dev_t*)dev;
+	uint8_t buffer[2];
+
+	buffer[0] = iofs;
+	buffer[1] = qofs;
+
+	return libusb_control_transfer(devt->devh, CTRL_OUT, 0x07,
+				       FUNC(3, 0x08), 0,
+				       buffer, sizeof(buffer), CTRL_TIMEOUT);
+}
+
 /* two raised to the power of n */
 #define TWO_POW(n)		(1ULL<<(n))
 

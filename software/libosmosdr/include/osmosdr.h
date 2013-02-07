@@ -139,6 +139,8 @@ OSMOSDR_API int osmosdr_set_tuner_mixer_gain(osmosdr_dev_t *dev, int gain);
 OSMOSDR_API int osmosdr_set_tuner_mixer_enh(osmosdr_dev_t *dev, int enh);
 /* set IF stages gain */
 OSMOSDR_API int osmosdr_set_tuner_if_gain(osmosdr_dev_t *dev, int stage, int gain);
+/* set DC offset registers */
+OSMOSDR_API int osmosdr_set_tuner_dc_offset(osmosdr_dev_t *dev, int iofs, int qofs);
 
 /*!
  * Get a list of sample rates supported by the device.
