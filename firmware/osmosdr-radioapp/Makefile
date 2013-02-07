@@ -72,7 +72,7 @@ all: build
 # general compiler flags
 CFLAGS=\
 	-mcpu=cortex-m3 -mthumb -mlong-calls -ffunction-sections -fdata-sections -std=gnu99 \
-	-Os -g3 -Wall -Dat91sam3u4 -DARM_MATH_CM3 -D__CHECK_DEVICE_DEFINES \
+	-O2 -g3 -Wall -Dat91sam3u4 -DARM_MATH_CM3 -D__CHECK_DEVICE_DEFINES \
 	\
 	-D__CM3_REV=0x0200 \
 	-D__MPU_PRESENT=0 \
