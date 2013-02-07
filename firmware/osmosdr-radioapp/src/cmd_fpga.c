@@ -76,13 +76,32 @@ static void fpgaSetReg(int argc, const char* argv[])
 	}
 	u32 reg = atoi(argv[0]);
 	u32 val = atoi(argv[1]);
-	void sdrfpga_regWrite(u8 reg, u32 val);
+	//void sdrfpga_regWrite(u8 reg, u32 val);
 	sdrfpga_regWrite(reg, val);
+}
+
+static void fpgaTest(int argc, const char* argv[])
+{
+	if(argc != 1) {
+		printf("FPGA: please supply test parameters\n");
+		return;
+	}
+	u32 onOff = atoi(argv[0]);
+	//void sdrfpga_setTestmode(Bool on);
+	if(onOff == 0)
+		sdrfpga_setTestmode(False);
+	else if(onOff == 1)
+		sdrfpga_setTestmode(True);
+	else printf("FPGA: please set testmode to 0 = off or 1 = on");
 }
 
 CONSOLE_CMD_BEGIN(g_fpgaSetRegParameters)
 	CONSOLE_CMD_PARAM(PTUnsigned, "register"),
 	CONSOLE_CMD_PARAM(PTUnsigned, "value")
+CONSOLE_CMD_END()
+
+CONSOLE_CMD_BEGIN(g_fpgaTestParameters)
+	CONSOLE_CMD_PARAM(PTUnsigned, "0 = off, 1 = on")
 CONSOLE_CMD_END()
 
 CONSOLE_GROUP_BEGIN(g_fpgaGroup)
@@ -91,6 +110,7 @@ CONSOLE_GROUP_BEGIN(g_fpgaGroup)
 	CONSOLE_GROUP_CMD("stop", "stop sampling", NULL, &fpgaStop),
 	CONSOLE_GROUP_CMD("stats", "print sampling statistics", NULL, &fpgaStats),
 	CONSOLE_GROUP_CMD("fft", "calculate and display FFT of input", NULL, &fpgaFFT),
-	CONSOLE_GROUP_CMD("sreg", "set FPGA register", g_fpgaSetRegParameters, &fpgaSetReg)
+	CONSOLE_GROUP_CMD("sreg", "set FPGA register", g_fpgaSetRegParameters, &fpgaSetReg),
+	CONSOLE_GROUP_CMD("test", "switch on test mode", g_fpgaTestParameters, &fpgaTest)
 CONSOLE_GROUP_END()
 
