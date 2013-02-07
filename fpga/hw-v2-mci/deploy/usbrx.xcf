@@ -1,0 +1,49 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<!DOCTYPE		ispXCF	SYSTEM	"IspXCF.dtd" >
+<ispXCF version="1.4">
+	<Comment></Comment>
+	<Chain>
+		<Comm>JTAG</Comm>
+		<Device>
+			<SelectedProg value="TRUE"/>
+			<Pos>1</Pos>
+			<Vendor>Lattice</Vendor>
+			<Family>LatticeXP2</Family>
+			<Name>LFXP2-5E</Name>
+			<IDCode>0x01299043</IDCode>
+			<Package>All</Package>
+			<PON>LFXP2-5E</PON>
+			<Bypass>
+				<InstrLen>8</InstrLen>
+				<InstrVal>11111111</InstrVal>
+				<BScanLen>1</BScanLen>
+				<BScanVal>0</BScanVal>
+			</Bypass>
+			<File>../diamond/usbrx_vhdl/usbrx_vhdl_usbrx_vhdl.jed</File>
+			<FileTime>5/2/2012 11:21:53</FileTime>
+			<JedecChecksum>0xA75C</JedecChecksum>
+			<Operation>FLASH Erase,Program,Verify,Refresh</Operation>
+			<Option>
+				<SVFVendor>JTAG STANDARD</SVFVendor>
+				<IOState>Leave Alone</IOState>
+				<PreloadLength>394</PreloadLength>
+				<Reinitialize value="TRUE"/>
+				<SVFProcessor>SVF Processor</SVFProcessor>
+				<Usercode>0xFFFFFFFF</Usercode>
+				<AccessMode>FLASH</AccessMode>
+			</Option>
+		</Device>
+	</Chain>
+	<ProjectOptions>
+		<Program>SEQUENTIAL</Program>
+		<Process>ENTIRED CHAIN</Process>
+		<OperationOverride>No Override</OperationOverride>
+		<StartTAP>TLR</StartTAP>
+		<EndTAP>TLR</EndTAP>
+		<VerifyUsercode value="FALSE"/>
+	</ProjectOptions>
+	<CableOptions>
+		<CableName>USB2</CableName>
+		<PortAdd>FTUSB-0</PortAdd>
+	</CableOptions>
+</ispXCF>

@@ -1,0 +1,5 @@
+i<>.\src\usbrx\toplevel\usbrx_toplevel.vhd
+i<>.\src\mt_toolbox\mt_synctools.vhd
+i<>.\src\sdio\sdio_top.vhd
+i<>.\src\testbench\tb_sdio.vhd
+i<>.\src\sdio\mt_resample_fifo.vhd
