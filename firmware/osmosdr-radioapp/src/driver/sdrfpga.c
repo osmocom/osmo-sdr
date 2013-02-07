@@ -128,6 +128,9 @@ void sdrfpga_configure(void)
 	sdrfpga_setIQSwap(False);
 	// switch off test mode
 	sdrfpga_setTestmode(False);
+	// switch off PWM outputs
+	sdrfpga_regWrite(REG_PWM1, 0);
+	sdrfpga_regWrite(REG_PWM2, 0);
 
 	// 80MHz ADC clock, 4 clocks for #CS up -> 20 clocks per sample -> 4msps
 	sdrfpga_regWrite(REG_ADCMODE, 0x0401);
