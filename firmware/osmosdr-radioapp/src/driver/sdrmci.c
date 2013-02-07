@@ -30,7 +30,7 @@
 #include "../usb/usbdevice.h"
 #include "../at91sam3u4/core_cm3.h"
 
-#define DMA_CTRLA (AT91C_HDMA_SRC_WIDTH_WORD | AT91C_HDMA_DST_WIDTH_WORD | AT91C_HDMA_SCSIZE_4 |AT91C_HDMA_DCSIZE_4)
+#define DMA_CTRLA (AT91C_HDMA_SRC_WIDTH_WORD | AT91C_HDMA_DST_WIDTH_WORD | AT91C_HDMA_SCSIZE_4 | AT91C_HDMA_DCSIZE_4 )
 #define DMA_CTRLB (AT91C_HDMA_DST_DSCR_FETCH_FROM_MEM | \
 	AT91C_HDMA_DST_ADDRESS_MODE_INCR | \
 	AT91C_HDMA_SRC_DSCR_FETCH_DISABLE | \
@@ -41,11 +41,12 @@
 #define CBTC(n) (1 << (8 + n))
 #define ERR(n) (1 << (16 + n))
 
-__attribute__((section(".buffer"))) static u8 g_bufferSpace[8][2048];
+#define NUM_BUFFERS 16
+__attribute__((section(".buffer"))) static u8 g_bufferSpace[NUM_BUFFERS][1024];
 
 typedef struct {
 	Bool running;
-	DMABuffer dmaBuffer[8];
+	DMABuffer dmaBuffer[NUM_BUFFERS];
 	DMABufferQueue emptyQueue;
 	DMABufferQueue runningQueue;
 	uint overruns;
@@ -94,9 +95,12 @@ static void submitBuffer(DMABuffer* buffer)
 
 void mci0_irqHandler(void)
 {
-	if(AT91C_BASE_MCI0->MCI_SR & AT91C_MCI_BLKOVRE) {
+	u32 sr = AT91C_BASE_MCI0->MCI_SR;
+	if(sr & AT91C_MCI_BLKOVRE) {
 		g_mciState.overruns++;
 	}
+	//AT91C_BASE_MCI0->MCI_SR = sr;
+	//dprintf("-%08x-\n", sr);
 }
 
 void hdma_irqHandler(void)
@@ -125,10 +129,10 @@ void sdrmci_configure(void)
 	g_mciState.running = False;
 	dmaBuffer_init(&g_mciState.emptyQueue);
 	dmaBuffer_init(&g_mciState.runningQueue);
-	for(int i = 0; i < 8; i++) {
+	for(int i = 0; i < NUM_BUFFERS; i++) {
 		for(int j = 0; j < sizeof(g_bufferSpace[i]); j++)
 			g_bufferSpace[i][j] = 0x00;
-		dmaBuffer_initBuffer(&g_mciState.dmaBuffer[i], g_bufferSpace[i], sizeof(g_bufferSpace[i]));
+		dmaBuffer_initBuffer(&g_mciState.dmaBuffer[i], g_bufferSpace[i], sizeof(g_bufferSpace[i]), i);
 		dmaBuffer_enqueue(&g_mciState.emptyQueue, &g_mciState.dmaBuffer[i]);
 	}
 	g_mciState.overruns = 0;
@@ -139,7 +143,8 @@ void sdrmci_configure(void)
 	pio_configure(mciPins, 6);
 
 	mci_configure(AT91C_BASE_MCI0, AT91C_ID_MCI0);
-	mci_enableInterrupts(AT91C_BASE_MCI0, /*(1 << 21) | (1 << 22) |*/ (1 << 24) /*| (1 < 30)*/); // RCOE DTOE BLKOVRE OVRE
+	//mci_enableInterrupts(AT91C_BASE_MCI0, /*(1 << 21) | (1 << 22) |*/ (1 << 24) /*| (1 < 30)*/); // RCOE DTOE BLKOVRE OVRE
+	mci_enableInterrupts(AT91C_BASE_MCI0, AT91C_MCI_BLKOVRE|AT91C_MCI_BLKE);
 	irq_configure(AT91C_ID_MCI0, 0);
 	irq_enable(AT91C_ID_MCI0);
 
