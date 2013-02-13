@@ -190,6 +190,9 @@ static void initRAM(void)
 
 __attribute__((noreturn)) void resetHandler(void)
 {
+	// disable all interrupts
+	for(int i = 0; i < 8; i++)
+		NVIC->ICER[i] = 0xffffffff;
 	led_configure();
 	led_internalSet(True);
 	startApplication();
