@@ -32,6 +32,8 @@
 
 #define __CORTEX_M                (0x03)                                                       /*!< Cortex core                    */
 
+#define __MPU_PRESENT 1
+
 /**
  *  Lint configuration \n
  *  ----------------------- \n
