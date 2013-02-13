@@ -31,6 +31,9 @@ static void displaySN()
 {
 	char sn[17];
 
+	for(int i = 0; i < 16; i++)
+		sn[i] = '0';
+	sn[sizeof(sn) - 1] = '\0';
 	flash_readUID(sn);
 	usbDevice_setSerial(sn);
 	printf("-- s/n %s --\n\n", sn);
