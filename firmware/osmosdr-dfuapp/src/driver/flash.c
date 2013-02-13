@@ -23,13 +23,30 @@
 #include "../at91sam3u4/core_cm3.h"
 #include "sys.h"
 
+static __attribute__((section(".ramfunc"))) uint32_t _flash_get_FAULTMASK(void)
+{
+  uint32_t result=0;
+
+  __ASM volatile ("MRS %0, faultmask" : "=r" (result) );
+  return(result);
+}
+
+static __attribute__((section(".ramfunc"))) void _flash_set_FAULTMASK(uint32_t faultMask)
+{
+  __ASM volatile ("MSR faultmask, %0" : : "r" (faultMask) );
+}
+
 extern u32 _dfumode;
 #define DFU_MAGIC 0xcd220778
 
 __attribute__((section(".ramfunc"))) void flash_readUID(char* uid)
 {
-	u32 faultmask = __get_FAULTMASK() ;
+	u32 faultmask = _flash_get_FAULTMASK() ;
 	__disable_fault_irq();
+
+	// reset pipeline
+	__ISB(0);
+	__DSB(0);
 
 	while((AT91C_BASE_EFC0->EFC_FSR & AT91C_EFC_FRDY_S) != AT91C_EFC_FRDY_S) __NOP();
 
@@ -43,17 +60,17 @@ __attribute__((section(".ramfunc"))) void flash_readUID(char* uid)
 	AT91C_BASE_EFC0->EFC_FCR = 0x5a00000f;
 	while((AT91C_BASE_EFC0->EFC_FSR & AT91C_EFC_FRDY_S) != AT91C_EFC_FRDY_S) __NOP();
 
-	// reset cacheline
+	// reset pipeline
 	((volatile u32*)AT91C_IFLASH0)[0];
 	__ISB(0);
 	__DSB(0);
 
-	__set_FAULTMASK(faultmask);
+	_flash_set_FAULTMASK(faultmask);
 }
 
 __attribute__((section(".ramfunc"))) int flash_write_bank0(u32 addr, const u8* data, uint len)
 {
-	u32 faultmask = __get_FAULTMASK();
+	u32 faultmask = _flash_get_FAULTMASK();
 	AT91PS_EFC efc = AT91C_BASE_EFC0;
 	u32* flashBase = (u32*)AT91C_IFLASH0;
 	u32 blockLen;
@@ -64,6 +81,9 @@ __attribute__((section(".ramfunc"))) int flash_write_bank0(u32 addr, const u8* d
 		return -1;
 
 	__disable_fault_irq();
+
+	__ISB(0);
+	__DSB(0);
 
 	AT91C_BASE_EFC0->EFC_FMR = ((6 << 8) & AT91C_EFC_FWS);
 	AT91C_BASE_EFC1->EFC_FMR = ((6 << 8) & AT91C_EFC_FWS);
@@ -107,7 +127,7 @@ __attribute__((section(".ramfunc"))) int flash_write_bank0(u32 addr, const u8* d
 	__ISB(0);
 	__DSB(0);
 
-	__set_FAULTMASK(faultmask);
+	_flash_set_FAULTMASK(faultmask);
 
 	return res;
 }
