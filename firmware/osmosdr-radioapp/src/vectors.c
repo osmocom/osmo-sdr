@@ -129,6 +129,9 @@ static void faultReport(const char *pFaultName, const u32* sp)
 	cfsr = SCB->CFSR;
 	mmfar = SCB->MMFAR;
 	bfar = SCB->BFAR;
+
+	dprintf("HFSR: 0x%08x    SHCSR: 0x%08x\n", SCB->HFSR, SCB->SHCSR);
+	dprintf("ICSR: 0x%08x    CFSR:  0x%08x\n", SCB->ICSR, SCB->CFSR);
 	dprintf("MMSR: 0x%02x\n", (cfsr & 0xff));
 	if((cfsr & CFSR_MMARVALID) != 0)
 		dprintf("MMAR: 0x%08x\n", mmfar);
@@ -137,7 +140,10 @@ static void faultReport(const char *pFaultName, const u32* sp)
 		dprintf("BFAR: 0x%08x\n", bfar);
 	dprintf("UFSR: 0x%04x        HFSR: 0x%08x\n", ((cfsr >> 16) & 0xffff), (u32)SCB->HFSR);
 	dprintf("DFSR: 0x%08x    AFSR: 0x%08x\n", (u32)SCB->DFSR, (u32)SCB->AFSR);
-	dprintf("  LR: 0x%08x      PC: 0x%08x\n", sp[5], sp[6]);
+	//dprintf("  LR: 0x%08x      PC: 0x%08x\n", sp[5], sp[6]);
+	dprintf("STACK:\n");
+	for(int i = 0; i < 16; i++)
+		dprintf("%02x: %08x\n", i, sp[i]);
 
 	// Clear fault status bits (write-clear)
 	SCB->CFSR = SCB->CFSR;
