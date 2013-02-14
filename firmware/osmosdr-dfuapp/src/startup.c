@@ -78,13 +78,10 @@ static void startApplication(void)
 {
 	u32 mode = _dfumode;
 
-	for(u32* ptr = (u32*)0x20000000; ptr < (u32*)0x20008000; ptr++)
-		*ptr = 0;
-	for(u32* ptr = (u32*)0x20080000; ptr < (u32*)0x20084000; ptr++)
-		*ptr = 0;
-
-	if(mode == DFU_MAGIC)
+	if(mode == DFU_MAGIC) {
+		_dfumode = 0;
 		return;
+	}
 
 	const u32* app = (u32*)(AT91C_IFLASH0 + 16384);
 	void (*appReset)(void) = (void(*)(void))app[1];
@@ -113,6 +110,58 @@ static void setDefaultMaster(uint enable)
 		// Clear default master: Internal flash0 -> Cortex-M3 Instruction/Data
 		AT91C_BASE_MATRIX->HMATRIX2_SCFG3 &= (~AT91C_MATRIX_DEFMSTR_TYPE);
 	}
+}
+
+static void preInit(void)
+{
+	// switch to 8MHz RC oscillator
+	//AT91C_BASE_PMC->PMC_MOR = (0x37 << 16) | AT91C_CKGR_MOSCRCEN | (1 << 4);
+	// enable clock for UART
+	AT91C_BASE_PMC->PMC_PCER = (1 << AT91C_ID_DBGU);
+
+	// configure PINs for DBGU
+	// RXD
+	AT91C_BASE_PIOA->PIO_IDR = AT91C_PIO_PA11;
+	AT91C_BASE_PIOA->PIO_PPUDR = AT91C_PIO_PA11;
+	AT91C_BASE_PIOA->PIO_MDDR = AT91C_PIO_PA11;
+	AT91C_BASE_PIOA->PIO_ODR = AT91C_PIO_PA11;
+	AT91C_BASE_PIOA->PIO_PDR = AT91C_PIO_PA11;
+	AT91C_BASE_PIOA->PIO_ABSR &= ~AT91C_PIO_PA11;
+	// TXD
+	AT91C_BASE_PIOA->PIO_IDR = AT91C_PIO_PA12;
+	AT91C_BASE_PIOA->PIO_PPUDR = AT91C_PIO_PA12;
+	AT91C_BASE_PIOA->PIO_MDDR = AT91C_PIO_PA12;
+	AT91C_BASE_PIOA->PIO_ODR = AT91C_PIO_PA12;
+	AT91C_BASE_PIOA->PIO_PDR = AT91C_PIO_PA12;
+	AT91C_BASE_PIOA->PIO_ABSR &= ~AT91C_PIO_PA12;
+
+	// reset & disable receiver and transmitter, disable interrupts
+	AT91C_BASE_DBGU->DBGU_CR = AT91C_US_RSTRX | AT91C_US_RSTTX;
+	AT91C_BASE_DBGU->DBGU_IDR = 0xffffffff;
+
+	// Configure baud rate
+	AT91C_BASE_DBGU->DBGU_BRGR = 4000000 / (115200 * 16);
+
+	// Configure mode register
+	AT91C_BASE_DBGU->DBGU_MR = AT91C_US_PAR_NONE;
+
+	// Disable DMA channel
+	AT91C_BASE_DBGU->DBGU_PTCR = AT91C_PDC_RXTDIS | AT91C_PDC_TXTDIS;
+
+	// Enable transmitter
+	AT91C_BASE_DBGU->DBGU_CR = AT91C_US_TXEN;
+}
+
+static void putCharDirect(u8 c)
+{
+	while((AT91C_BASE_DBGU->DBGU_CSR & AT91C_US_TXEMPTY) == 0);
+	AT91C_BASE_DBGU->DBGU_THR = c;
+}
+
+static void putStrDirect(const char* str)
+{
+	while(*str != '\0')
+		putCharDirect(*str++);
 }
 
 static void lowLevelInit(void)
@@ -168,6 +217,9 @@ static void lowLevelInit(void)
 
 	// Optimize CPU setting for speed, for engineering samples only
 	setDefaultMaster(1);
+
+	// Configure baud rate
+	AT91C_BASE_DBGU->DBGU_BRGR = BOARD_MCK / (115200 * 16);
 }
 
 static void initRAM(void)
@@ -190,15 +242,33 @@ static void initRAM(void)
 
 __attribute__((noreturn)) void resetHandler(void)
 {
+	for(u32* ptr = (u32*)0x20000000; ptr < (u32*)0x20007ff8; ptr++)
+		*ptr = 0;
+	for(u32* ptr = (u32*)0x20080000; ptr < (u32*)0x20084000; ptr++)
+		*ptr = 0;
+
+	preInit();
+	putCharDirect('0');
+
 	// disable all interrupts
 	for(int i = 0; i < 8; i++)
 		NVIC->ICER[i] = 0xffffffff;
+
+	putStrDirect("preinit...");
 	led_configure();
+	putCharDirect('1');
 	led_internalSet(True);
+	putCharDirect('2');
 	startApplication();
+	putCharDirect('3');
 	led_internalSet(False);
+	putCharDirect('4');
 	lowLevelInit();
+	putCharDirect('5');
 	initRAM();
+	putStrDirect("6...");
+	putCharDirect('\r');
+	putCharDirect('\n');
 
 	// configure interrupt vector table
 	AT91C_BASE_NVIC->NVIC_VTOFFR = ((u32)(&interrupt_table));

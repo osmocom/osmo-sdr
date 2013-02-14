@@ -62,6 +62,18 @@ static void setDefaultMaster(uint enable)
 	}
 }
 
+static void putCharDirect(u8 c)
+{
+	while((AT91C_BASE_DBGU->DBGU_CSR & AT91C_US_TXEMPTY) == 0);
+	AT91C_BASE_DBGU->DBGU_THR = c;
+}
+
+static void putStrDirect(const char* str)
+{
+	while(*str != '\0')
+		putCharDirect(*str++);
+}
+
 static void lowLevelInit(void)
 {
 	uint timeout;
@@ -115,6 +127,9 @@ static void lowLevelInit(void)
 
 	// Optimize CPU setting for speed, for engineering samples only
 	setDefaultMaster(1);
+
+	// Configure baud rate
+	AT91C_BASE_DBGU->DBGU_BRGR = BOARD_MCK / (115200 * 16);
 }
 
 static void initRAM(void)
@@ -137,15 +152,21 @@ static void initRAM(void)
 
 __attribute__((noreturn)) void resetHandler(void)
 {
+	putCharDirect('A');
 	lowLevelInit();
+	putCharDirect('B');
 	initRAM();
+	putCharDirect('C');
 
 	// configure interrupt vector table
 	AT91C_BASE_NVIC->NVIC_VTOFFR = ((u32)(&interrupt_table));
 
+	putCharDirect('D');
+
 	// ready to go...
 	__enable_fault_irq();
 	__enable_irq();
+	putStrDirect("E...\r\n");
 	main();
 	__disable_irq();
 	__disable_fault_irq();
