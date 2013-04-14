@@ -28,9 +28,9 @@ extern "C" {
 
 typedef struct osmosdr_dev osmosdr_dev_t;
 
-OSMOSDR_API uint32_t osmosdr_get_device_count(void);
+LIBOSMOSDR_API uint32_t osmosdr_get_device_count(void);
 
-OSMOSDR_API const char* osmosdr_get_device_name(uint32_t index);
+LIBOSMOSDR_API const char* osmosdr_get_device_name(uint32_t index);
 
 /*!
  * Get USB device strings.
@@ -43,14 +43,14 @@ OSMOSDR_API const char* osmosdr_get_device_name(uint32_t index);
  * \param serial serial number, may be NULL
  * \return 0 on success
  */
-OSMOSDR_API int osmosdr_get_device_usb_strings(uint32_t index,
+LIBOSMOSDR_API int osmosdr_get_device_usb_strings(uint32_t index,
 					       char *manufact,
 					       char *product,
 					       char *serial);
 
-OSMOSDR_API int osmosdr_open(osmosdr_dev_t **dev, uint32_t index);
+LIBOSMOSDR_API int osmosdr_open(osmosdr_dev_t **dev, uint32_t index);
 
-OSMOSDR_API int osmosdr_close(osmosdr_dev_t *dev);
+LIBOSMOSDR_API int osmosdr_close(osmosdr_dev_t *dev);
 
 /* configuration functions */
 
@@ -65,7 +65,7 @@ OSMOSDR_API int osmosdr_close(osmosdr_dev_t *dev);
  * \param serial serial number, may be NULL
  * \return 0 on success
  */
-OSMOSDR_API int osmosdr_get_usb_strings(osmosdr_dev_t *dev, char *manufact,
+LIBOSMOSDR_API int osmosdr_get_usb_strings(osmosdr_dev_t *dev, char *manufact,
 					char *product, char *serial);
 
 /*!
@@ -75,7 +75,7 @@ OSMOSDR_API int osmosdr_get_usb_strings(osmosdr_dev_t *dev, char *manufact,
  * \param freq frequency in Hz the device should be tuned to
  * \return 0 on error, frequency in Hz otherwise
  */
-OSMOSDR_API int osmosdr_set_center_freq(osmosdr_dev_t *dev, uint32_t freq);
+LIBOSMOSDR_API int osmosdr_set_center_freq(osmosdr_dev_t *dev, uint32_t freq);
 
 /*!
  * Get the actual frequency the device is tuned to.
@@ -83,7 +83,7 @@ OSMOSDR_API int osmosdr_set_center_freq(osmosdr_dev_t *dev, uint32_t freq);
  * \param dev the device handle given by osmosdr_open()
  * \return 0 on error, frequency in Hz otherwise
  */
-OSMOSDR_API uint32_t osmosdr_get_center_freq(osmosdr_dev_t *dev);
+LIBOSMOSDR_API uint32_t osmosdr_get_center_freq(osmosdr_dev_t *dev);
 
 /*!
  * Get a list of gains supported by the tuner.
@@ -95,7 +95,7 @@ OSMOSDR_API uint32_t osmosdr_get_center_freq(osmosdr_dev_t *dev);
  * \param gains array of gain values. In tenths of a dB, 115 means 11.5 dB.
  * \return <= 0 on error, number of available (returned) gain values otherwise
  */
-OSMOSDR_API int osmosdr_get_tuner_gains(osmosdr_dev_t *dev, int *gains);
+LIBOSMOSDR_API int osmosdr_get_tuner_gains(osmosdr_dev_t *dev, int *gains);
 
 /*!
  * Set the gain for the device.
@@ -111,7 +111,7 @@ OSMOSDR_API int osmosdr_get_tuner_gains(osmosdr_dev_t *dev, int *gains);
  * \param gain in tenths of a dB, 115 means 11.5 dB.
  * \return 0 on success
  */
-OSMOSDR_API int osmosdr_set_tuner_gain(osmosdr_dev_t *dev, int gain);
+LIBOSMOSDR_API int osmosdr_set_tuner_gain(osmosdr_dev_t *dev, int gain);
 
 /*!
  * Get actual gain the device is configured to.
@@ -119,7 +119,7 @@ OSMOSDR_API int osmosdr_set_tuner_gain(osmosdr_dev_t *dev, int gain);
  * \param dev the device handle given by osmosdr_open()
  * \return 0 on error, gain in tenths of a dB, 115 means 11.5 dB.
  */
-OSMOSDR_API int osmosdr_get_tuner_gain(osmosdr_dev_t *dev);
+LIBOSMOSDR_API int osmosdr_get_tuner_gain(osmosdr_dev_t *dev);
 
 /*!
  * Set the gain mode (automatic/manual) for the device.
@@ -129,18 +129,18 @@ OSMOSDR_API int osmosdr_get_tuner_gain(osmosdr_dev_t *dev);
  * \param manual gain mode, 1 means manual gain mode shall be enabled.
  * \return 0 on success
  */
-OSMOSDR_API int osmosdr_set_tuner_gain_mode(osmosdr_dev_t *dev, int manual);
+LIBOSMOSDR_API int osmosdr_set_tuner_gain_mode(osmosdr_dev_t *dev, int manual);
 
 /* set LNA gain in hdB */
-OSMOSDR_API int osmosdr_set_tuner_lna_gain(osmosdr_dev_t *dev, int gain);
+LIBOSMOSDR_API int osmosdr_set_tuner_lna_gain(osmosdr_dev_t *dev, int gain);
 /* set mixer gain in hdB */
-OSMOSDR_API int osmosdr_set_tuner_mixer_gain(osmosdr_dev_t *dev, int gain);
+LIBOSMOSDR_API int osmosdr_set_tuner_mixer_gain(osmosdr_dev_t *dev, int gain);
 /* set mixer enhancement */
-OSMOSDR_API int osmosdr_set_tuner_mixer_enh(osmosdr_dev_t *dev, int enh);
+LIBOSMOSDR_API int osmosdr_set_tuner_mixer_enh(osmosdr_dev_t *dev, int enh);
 /* set IF stages gain */
-OSMOSDR_API int osmosdr_set_tuner_if_gain(osmosdr_dev_t *dev, int stage, int gain);
+LIBOSMOSDR_API int osmosdr_set_tuner_if_gain(osmosdr_dev_t *dev, int stage, int gain);
 /* set DC offset registers */
-OSMOSDR_API int osmosdr_set_tuner_dc_offset(osmosdr_dev_t *dev, int iofs, int qofs);
+LIBOSMOSDR_API int osmosdr_set_tuner_dc_offset(osmosdr_dev_t *dev, int iofs, int qofs);
 
 /*!
  * Get a list of sample rates supported by the device.
@@ -152,7 +152,7 @@ OSMOSDR_API int osmosdr_set_tuner_dc_offset(osmosdr_dev_t *dev, int iofs, int qo
  * \param rates array of rate values in Hz
  * \return <= 0 on error, number of available (returned) rate values otherwise
  */
-OSMOSDR_API uint32_t osmosdr_get_sample_rates(osmosdr_dev_t *dev, uint32_t *rates);
+LIBOSMOSDR_API uint32_t osmosdr_get_sample_rates(osmosdr_dev_t *dev, uint32_t *rates);
 
 /*!
  * Set the sample rate for the device.
@@ -161,7 +161,7 @@ OSMOSDR_API uint32_t osmosdr_get_sample_rates(osmosdr_dev_t *dev, uint32_t *rate
  * \param rate the sample rate in Hz
  * \return 0 on success
  */
-OSMOSDR_API int osmosdr_set_sample_rate(osmosdr_dev_t *dev, uint32_t rate);
+LIBOSMOSDR_API int osmosdr_set_sample_rate(osmosdr_dev_t *dev, uint32_t rate);
 
 /*!
  * Get the sample rate the device is configured to.
@@ -169,33 +169,33 @@ OSMOSDR_API int osmosdr_set_sample_rate(osmosdr_dev_t *dev, uint32_t rate);
  * \param dev the device handle given by osmosdr_open()
  * \return 0 on error, sample rate in Hz otherwise
  */
-OSMOSDR_API uint32_t osmosdr_get_sample_rate(osmosdr_dev_t *dev);
+LIBOSMOSDR_API uint32_t osmosdr_get_sample_rate(osmosdr_dev_t *dev);
 
 /* this allows direct access to the FPGA register bank */
-OSMOSDR_API int osmosdr_set_fpga_reg(osmosdr_dev_t *dev, uint8_t reg, uint32_t value);
+LIBOSMOSDR_API int osmosdr_set_fpga_reg(osmosdr_dev_t *dev, uint8_t reg, uint32_t value);
 
 /* more access to OsmoSDR functions */
 
 /* set decimation (0 = off, 1 = 1:2, 2 = 1:4, 3 = 1:8, ... 6 = 1:64) */
-OSMOSDR_API int osmosdr_set_fpga_decimation(osmosdr_dev_t *dev, int dec);
+LIBOSMOSDR_API int osmosdr_set_fpga_decimation(osmosdr_dev_t *dev, int dec);
 
 /* set i/q swap / spectrum inversion (0 = off, 1 = on) */
-OSMOSDR_API int osmosdr_set_fpga_iq_swap(osmosdr_dev_t *dev, int sw);
+LIBOSMOSDR_API int osmosdr_set_fpga_iq_swap(osmosdr_dev_t *dev, int sw);
 
 /* configure scaling of i and q channel (scaled_i = (orig_i * igain) / 32768) */
-OSMOSDR_API int osmosdr_set_fpga_iq_gain(osmosdr_dev_t *dev, uint16_t igain, uint16_t qgain);
+LIBOSMOSDR_API int osmosdr_set_fpga_iq_gain(osmosdr_dev_t *dev, uint16_t igain, uint16_t qgain);
 
 /* configure i and q offset correction (corrected_i = orig_i + iofs */
-OSMOSDR_API int osmosdr_set_fpga_iq_ofs(osmosdr_dev_t *dev, int16_t iofs, int16_t qofs);
+LIBOSMOSDR_API int osmosdr_set_fpga_iq_ofs(osmosdr_dev_t *dev, int16_t iofs, int16_t qofs);
 
 /* configure i and q amplifiers */
-OSMOSDR_API int osmosdr_set_iq_amp(osmosdr_dev_t *dev, uint8_t i1, uint8_t i2, uint8_t q1, uint8_t q2);
+LIBOSMOSDR_API int osmosdr_set_iq_amp(osmosdr_dev_t *dev, uint8_t i1, uint8_t i2, uint8_t q1, uint8_t q2);
 
 /* streaming functions */
 
-OSMOSDR_API int osmosdr_reset_buffer(osmosdr_dev_t *dev);
+LIBOSMOSDR_API int osmosdr_reset_buffer(osmosdr_dev_t *dev);
 
-OSMOSDR_API int osmosdr_read_sync(osmosdr_dev_t *dev, void *buf, int len, int *n_read);
+LIBOSMOSDR_API int osmosdr_read_sync(osmosdr_dev_t *dev, void *buf, int len, int *n_read);
 
 typedef void(*osmosdr_read_async_cb_t)(unsigned char *buf, uint32_t len, void *ctx);
 
@@ -212,7 +212,7 @@ typedef void(*osmosdr_read_async_cb_t)(unsigned char *buf, uint32_t len, void *c
  *		  set to 0 for default buffer length (16 * 32 * 512)
  * \return 0 on success
  */
-OSMOSDR_API int osmosdr_read_async(osmosdr_dev_t *dev,
+LIBOSMOSDR_API int osmosdr_read_async(osmosdr_dev_t *dev,
 				 osmosdr_read_async_cb_t cb,
 				 void *ctx,
 				 uint32_t buf_num,
@@ -224,7 +224,7 @@ OSMOSDR_API int osmosdr_read_async(osmosdr_dev_t *dev,
  * \param dev the device handle given by osmosdr_open()
  * \return 0 on success
  */
-OSMOSDR_API int osmosdr_cancel_async(osmosdr_dev_t *dev);
+LIBOSMOSDR_API int osmosdr_cancel_async(osmosdr_dev_t *dev);
 
 #ifdef __cplusplus
 }

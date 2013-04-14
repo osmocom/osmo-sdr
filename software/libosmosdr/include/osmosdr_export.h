@@ -36,11 +36,11 @@
 
 #ifndef osmosdr_STATIC
 #	ifdef osmosdr_EXPORTS
-#	define OSMOSDR_API __SDR_EXPORT
+#	define LIBOSMOSDR_API __SDR_EXPORT
 #	else
-#	define OSMOSDR_API __SDR_IMPORT
+#	define LIBOSMOSDR_API __SDR_IMPORT
 #	endif
 #else
-#define OSMOSDR_API
+#define LIBOSMOSDR_API
 #endif
 #endif /* __OSMOSDR_EXPORT_H */
