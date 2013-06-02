@@ -30,7 +30,8 @@ target_link_libraries(osmosdr_shared
 
 set_target_properties(osmosdr_shared PROPERTIES DEFINE_SYMBOL "osmosdr_EXPORTS")
 set_target_properties(osmosdr_shared PROPERTIES OUTPUT_NAME osmosdr)
-set_target_properties(osmosdr_shared PROPERTIES SOVERSION 0 VERSION 0.0.0)
+set_target_properties(osmosdr_shared PROPERTIES SOVERSION ${MAJOR_VERSION})
+set_target_properties(osmosdr_shared PROPERTIES VERSION ${LIBVER})
 
 add_library(osmosdr_static STATIC
     libosmosdr.c
