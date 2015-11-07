@@ -932,7 +932,7 @@ unsigned char GetByte(int a_iCurrentIndex, char a_cAlgo)
 	*                                                            *
 	*************************************************************/
 		if((a_iCurrentIndex & 1023) == 0)
-			printf("%d bytes done (%d%%)\n", a_iCurrentIndex, (a_iCurrentIndex * 100) / g_ispDataSize);
+			printf("%d bytes done (%zu%%)\n", a_iCurrentIndex, (a_iCurrentIndex * 100) / g_ispDataSize);
 		if(a_iCurrentIndex >= g_ispDataSize)
 			return (unsigned char)0xff;
 		else return g_ispData[a_iCurrentIndex];
