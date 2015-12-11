@@ -27,6 +27,14 @@
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #endif
 
+//cross platform usleep()
+#ifdef _MSC_VER
+#include <windows.h>
+#define usleep(t) Sleep((t)/1000)
+#else
+#include <unistd.h>
+#endif
+
 #include <libusb.h>
 
 /*
